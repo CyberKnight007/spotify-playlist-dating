@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spotify Callback</title>
+</head>
+<body>
+    <h1>Spotify Authentication Successful</h1>
+    <p>You can close this window and return to the app.</p>
+    <script>
+        // Extract token from URL and pass back to app
+        const urlParams = new URLSearchParams(window.location.hash.substring(1));
+        const accessToken = urlParams.get('access_token');
+        const error = urlParams.get('error');
+        
+        if (accessToken) {
+            // Success - redirect back to app
+            window.location.href = 'playlistmatch://spotify-callback?access_token=' + accessToken;
+        } else if (error) {
+            // Error occurred
+            window.location.href = 'playlistmatch://spotify-callback?error=' + error;
+        }
+    </script>
+</body>
+</html>
+
