@@ -1,0 +1,55 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch:  # Allows manual triggering
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Prebuild Android project
+      run: npx expo prebuild --platform android --clean
+
+    - name: Build APK
+      working-directory: android
+      run: |
+        chmod +x gradlew
+        ./gradlew assembleRelease
+
+    - name: Find APK
+      id: find_apk
+      run: |
+        APK_PATH=$(find android/app/build/outputs/apk/release -name "*.apk" | head -n 1)
+        echo "apk_path=$APK_PATH" >> $GITHUB_OUTPUT
+        echo "Found APK at: $APK_PATH"
+
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: app-release
+        path: ${{ steps.find_apk.outputs.apk_path }}
+        retention-days: 30
+
