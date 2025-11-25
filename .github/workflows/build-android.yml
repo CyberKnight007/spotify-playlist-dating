@@ -33,8 +33,18 @@ jobs:
     - name: Prebuild Android project
       run: npx expo prebuild --platform android --clean
 
-    - name: Build APK with Expo
-      run: npx expo run:android --variant release --no-build-cache
+    - name: Verify Android project structure
+      run: |
+        ls -la android/
+        cat android/settings.gradle | head -20
+
+    - name: Build APK with Gradle
+      working-directory: android
+      env:
+        ANDROID_SDK_ROOT: ${{ env.ANDROID_HOME }}
+      run: |
+        chmod +x gradlew
+        ./gradlew assembleRelease --no-daemon --stacktrace
 
     - name: Find APK
       id: find_apk
