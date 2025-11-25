@@ -36,13 +36,24 @@ jobs:
     - name: Prebuild Android project
       run: npx expo prebuild --platform android --clean
 
-    - name: Export production bundle
-      run: npx expo export --platform android --output-dir ./dist
+    - name: Verify and fix Expo modules plugin
+      run: |
+        echo "Checking settings.gradle..."
+        cat android/settings.gradle
+        echo ""
+        echo "Checking root build.gradle..."
+        head -30 android/build.gradle || echo "No root build.gradle found"
 
-    - name: Build APK with Expo
-      run: npx expo run:android --variant release --no-install --no-bundler
-      env:
-        EXPO_NO_DOTENV: 1
+    - name: Build APK with Gradle (using expo modules)
+      working-directory: android
+      run: |
+        chmod +x gradlew
+        # Try to build with proper Expo module support
+        ./gradlew assembleRelease --no-daemon --stacktrace || {
+          echo "Build failed, checking Gradle configuration..."
+          cat build.gradle | head -50
+          exit 1
+        }
 
     - name: Find APK
       id: find_apk
