@@ -4,10 +4,8 @@
     "slug": "spotify-playlist-dating",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#0e1117"
     },
@@ -21,10 +19,6 @@
     "android": {
       "package": "com.playlistmatch.app",
       "versionCode": 1,
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#0e1117"
-      },
       "permissions": [
         "INTERNET",
         "ACCESS_NETWORK_STATE"
@@ -46,8 +40,7 @@
       ]
     },
     "web": {
-      "bundler": "metro",
-      "favicon": "./assets/favicon.png"
+      "bundler": "metro"
     },
     "extra": {
       "eas": {
