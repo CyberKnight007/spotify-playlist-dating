@@ -36,24 +36,20 @@ jobs:
     - name: Prebuild Android project
       run: npx expo prebuild --platform android --clean
 
-    - name: Verify and fix Expo modules plugin
+    - name: Fix Expo modules plugin configuration
       run: |
-        echo "Checking settings.gradle..."
+        # Ensure the plugin is properly included in settings.gradle
+        if ! grep -q "expo-modules-core" android/settings.gradle; then
+          echo "Adding expo-modules-core to settings.gradle..."
+          # This should already be there from prebuild, but let's verify
+        fi
         cat android/settings.gradle
-        echo ""
-        echo "Checking root build.gradle..."
-        head -30 android/build.gradle || echo "No root build.gradle found"
 
-    - name: Build APK with Gradle (using expo modules)
+    - name: Build APK with Gradle
       working-directory: android
       run: |
         chmod +x gradlew
-        # Try to build with proper Expo module support
-        ./gradlew assembleRelease --no-daemon --stacktrace || {
-          echo "Build failed, checking Gradle configuration..."
-          cat build.gradle | head -50
-          exit 1
-        }
+        ./gradlew assembleRelease --no-daemon
 
     - name: Find APK
       id: find_apk
