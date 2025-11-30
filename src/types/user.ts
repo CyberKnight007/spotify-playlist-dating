@@ -1,26 +1,28 @@
-import { SpotifyPlaylist, SpotifyTrack } from './spotify';
+import { SpotifyPlaylist, SpotifyTrack } from "./spotify";
 
 export interface UserProfile {
   id: string;
-  email: string;
+  email?: string;
   displayName: string;
   bio?: string;
   pronouns?: string;
   age?: number;
   city?: string;
   avatar?: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
   activePlaylistId?: string;
   spotifyAccessToken?: string;
   spotifyRefreshToken?: string;
   spotifyUserId?: string;
+  topGenres?: string[];
+  topArtists?: string[];
 }
 
 export interface SwipeAction {
   userId: string;
   targetUserId: string;
-  action: 'like' | 'pass';
+  action: "like" | "pass";
   timestamp: string;
 }
 
@@ -34,6 +36,13 @@ export interface Match {
   user2Profile: UserProfile;
   compatibility: number;
   sharedAttributes: string[];
+  // Enhanced fields for demo/UI
+  lastMessage?: string;
+  lastMessageTime?: string;
+  unreadCount?: number;
+  isOnline?: boolean;
+  sharedPlaylist?: string;
+  sharedSongs?: number;
 }
 
 export interface SwipeCard {
@@ -49,4 +58,3 @@ export interface SwipeCard {
   compatibility?: number;
   sharedAttributes?: string[];
 }
-

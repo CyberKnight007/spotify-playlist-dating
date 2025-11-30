@@ -1,14 +1,24 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, User } from 'firebase/auth';
-import { auth } from '../services/firebase';
-import { userService } from '../services/userService';
-import { UserProfile } from '../types/user';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
+import { account, ID } from "../services/appwrite";
+import type { Models } from "react-native-appwrite";
+import { userService } from "../services/userService";
+import { UserProfile } from "../types/user";
 
 interface AuthState {
-  user: User | null;
+  user: Models.User<Models.Preferences> | null;
   userProfile: UserProfile | null;
   loading: boolean;
-  signUp: (email: string, password: string, displayName: string) => Promise<void>;
+  signUp: (
+    email: string,
+    password: string,
+    displayName: string
+  ) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (updates: Partial<UserProfile>) => Promise<void>;
@@ -16,56 +26,97 @@ interface AuthState {
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
 
-export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+export const AuthProvider: React.FC<React.PropsWithChildren> = ({
+  children,
+}) => {
+  const [user, setUser] = useState<Models.User<Models.Preferences> | null>(
+    null
+  );
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      setUser(firebaseUser);
-      if (firebaseUser) {
-        const profile = await userService.getProfile(firebaseUser.uid);
-        setUserProfile(profile);
-      } else {
+    // Check for existing session
+    const checkSession = async () => {
+      try {
+        const currentUser = await account.get();
+        setUser(currentUser);
+        if (currentUser) {
+          const profile = await userService.getProfile(currentUser.$id);
+          setUserProfile(profile);
+        }
+      } catch (error) {
+        // No active session
+        setUser(null);
         setUserProfile(null);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
-    });
+    };
 
-    return unsubscribe;
+    checkSession();
   }, []);
 
-  const signUp = useCallback(async (email: string, password: string, displayName: string) => {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    await userService.createProfile(userCredential.user.uid, {
-      email,
-      displayName,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    });
-    const profile = await userService.getProfile(userCredential.user.uid);
+  const signUp = useCallback(
+    async (email: string, password: string, displayName: string) => {
+      const newUser = await account.create(
+        ID.unique(),
+        email,
+        password,
+        displayName
+      );
+      await account.createEmailPasswordSession(email, password);
+      const currentUser = await account.get();
+      setUser(currentUser);
+
+      await userService.createProfile(currentUser.$id, {
+        email,
+        displayName,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+      const profile = await userService.getProfile(currentUser.$id);
+      setUserProfile(profile);
+    },
+    []
+  );
+
+  const signIn = useCallback(async (email: string, password: string) => {
+    await account.createEmailPasswordSession(email, password);
+    const currentUser = await account.get();
+    setUser(currentUser);
+    const profile = await userService.getProfile(currentUser.$id);
     setUserProfile(profile);
   }, []);
 
-  const signIn = useCallback(async (email: string, password: string) => {
-    await signInWithEmailAndPassword(auth, email, password);
-  }, []);
-
   const logout = useCallback(async () => {
-    await signOut(auth);
+    await account.deleteSession("current");
+    setUser(null);
     setUserProfile(null);
   }, []);
 
-  const updateProfile = useCallback(async (updates: Partial<UserProfile>) => {
-    if (!user) return;
-    await userService.updateProfile(user.uid, updates);
-    const updated = await userService.getProfile(user.uid);
-    setUserProfile(updated);
-  }, [user]);
+  const updateProfile = useCallback(
+    async (updates: Partial<UserProfile>) => {
+      if (!user) return;
+      await userService.updateProfile(user.$id, updates);
+      const updated = await userService.getProfile(user.$id);
+      setUserProfile(updated);
+    },
+    [user]
+  );
 
   return (
-    <AuthContext.Provider value={{ user, userProfile, loading, signUp, signIn, logout, updateProfile }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        userProfile,
+        loading,
+        signUp,
+        signIn,
+        logout,
+        updateProfile,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
@@ -74,8 +125,7 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within AuthProvider');
+    throw new Error("useAuth must be used within AuthProvider");
   }
   return context;
 };
-
