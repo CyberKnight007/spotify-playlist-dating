@@ -32,33 +32,17 @@ import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAuth } from "../context/AuthContext";
+import { userService } from "../services/userService";
+import { useRealtimeMessaging } from "../hooks/useRealtimeMessaging";
+import { Message } from "../services/messageService";
+import { Alert } from "react-native";
+import { SongPickerModal } from "../components/SongPickerModal";
+import { PlaylistPickerModal } from "../components/PlaylistPickerModal";
+import { SpotifyTrack, SpotifyPlaylist } from "../types/spotify";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
-
-// Types
-interface Message {
-  id: string;
-  senderId: string;
-  text?: string;
-  type: "text" | "image" | "song" | "voice" | "emoji" | "playlist";
-  timestamp: Date;
-  status: "sent" | "delivered" | "read";
-  replyTo?: string;
-  reactions?: { emoji: string; userId: string }[];
-  songData?: {
-    name: string;
-    artist: string;
-    albumArt: string;
-    previewUrl?: string;
-  };
-  imageUrl?: string;
-  playlistData?: {
-    name: string;
-    coverUrl: string;
-    songCount: number;
-  };
-}
 
 interface ChatUser {
   id: string;
@@ -68,103 +52,6 @@ interface ChatUser {
   lastSeen?: string;
   isTyping?: boolean;
 }
-
-// Demo data
-const DEMO_USER: ChatUser = {
-  id: "luna-chen",
-  displayName: "Luna Chen",
-  avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400",
-  isOnline: true,
-  isTyping: false,
-};
-
-const DEMO_MESSAGES: Message[] = [
-  {
-    id: "1",
-    senderId: "luna-chen",
-    text: "Hey! I saw we matched on our love for Tame Impala 💜",
-    type: "text",
-    timestamp: new Date(Date.now() - 3600000 * 2),
-    status: "read",
-  },
-  {
-    id: "2",
-    senderId: "me",
-    text: "Yes! They're amazing! Have you seen them live?",
-    type: "text",
-    timestamp: new Date(Date.now() - 3600000 * 1.9),
-    status: "read",
-  },
-  {
-    id: "3",
-    senderId: "luna-chen",
-    text: "Twice! The visuals are insane 🌀",
-    type: "text",
-    timestamp: new Date(Date.now() - 3600000 * 1.8),
-    status: "read",
-  },
-  {
-    id: "4",
-    senderId: "luna-chen",
-    type: "song",
-    timestamp: new Date(Date.now() - 3600000 * 1.5),
-    status: "read",
-    songData: {
-      name: "Let It Happen",
-      artist: "Tame Impala",
-      albumArt:
-        "https://i.scdn.co/image/ab67616d0000b273b5b8c7cd64e09c4f76f4c9b4",
-      previewUrl: "https://example.com/preview.mp3",
-    },
-  },
-  {
-    id: "5",
-    senderId: "me",
-    text: "This song is a masterpiece! 🎧",
-    type: "text",
-    timestamp: new Date(Date.now() - 3600000),
-    status: "read",
-    replyTo: "4",
-  },
-  {
-    id: "6",
-    senderId: "luna-chen",
-    text: "Right?! I made a playlist with similar vibes",
-    type: "text",
-    timestamp: new Date(Date.now() - 1800000),
-    status: "read",
-  },
-  {
-    id: "7",
-    senderId: "luna-chen",
-    type: "playlist",
-    timestamp: new Date(Date.now() - 1700000),
-    status: "read",
-    playlistData: {
-      name: "Psychedelic Dreams",
-      coverUrl:
-        "https://images.unsplash.com/photo-1614149162883-504ce4d13909?w=400",
-      songCount: 42,
-    },
-  },
-  {
-    id: "8",
-    senderId: "me",
-    text: "Adding this to my library right now! 🔥",
-    type: "text",
-    timestamp: new Date(Date.now() - 600000),
-    status: "delivered",
-  },
-  {
-    id: "9",
-    senderId: "luna-chen",
-    text: "We should go to a concert together sometime! 🎤",
-    type: "text",
-    timestamp: new Date(Date.now() - 120000),
-    status: "read",
-    reactions: [{ emoji: "❤️", userId: "me" }],
-  },
-];
 
 // Quick reactions
 const QUICK_REACTIONS = ["❤️", "😂", "😮", "😢", "🔥", "👏"];
@@ -194,6 +81,24 @@ const MessageBubble = ({
     transform: [{ scale: scale.value }, { translateX: translateX.value }],
   }));
 
+  const replyIndicatorStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(
+      translateX.value,
+      [0, 60],
+      [0, 1],
+      Extrapolation.CLAMP
+    ),
+  }));
+
+  const replyIndicatorMeStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(
+      translateX.value,
+      [0, -60],
+      [0, 1],
+      Extrapolation.CLAMP
+    ),
+  }));
+
   // Swipe to reply gesture
   const panGesture = Gesture.Pan()
     .onUpdate((e) => {
@@ -218,6 +123,7 @@ const MessageBubble = ({
   };
 
   const formatTime = (date: Date) => {
+    if (isNaN(date.getTime())) return "";
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
@@ -225,18 +131,24 @@ const MessageBubble = ({
   const renderContent = () => {
     switch (message.type) {
       case "song":
+        // Handle both legacy simple format and full SpotifyTrack format
+        const songName = message.songData?.name;
+        const artistName =
+          message.songData?.artist ||
+          message.songData?.artists?.map((a: any) => a.name).join(", ");
+        const albumArt =
+          message.songData?.albumArt ||
+          message.songData?.album?.images?.[0]?.url;
+
         return (
           <Pressable style={styles.songBubble}>
-            <Image
-              source={{ uri: message.songData?.albumArt }}
-              style={styles.albumArt}
-            />
+            <Image source={{ uri: albumArt }} style={styles.albumArt} />
             <View style={styles.songInfo}>
               <Text style={styles.songName} numberOfLines={1}>
-                {message.songData?.name}
+                {songName}
               </Text>
               <Text style={styles.songArtist} numberOfLines={1}>
-                {message.songData?.artist}
+                {artistName}
               </Text>
             </View>
             <Pressable style={styles.playButton}>
@@ -246,10 +158,19 @@ const MessageBubble = ({
         );
 
       case "playlist":
+        const playlistName = message.playlistData?.name;
+        const playlistCover =
+          message.playlistData?.coverUrl ||
+          message.playlistData?.images?.[0]?.url;
+        const songCount =
+          message.playlistData?.songCount ||
+          message.playlistData?.tracks?.total ||
+          0;
+
         return (
           <Pressable style={styles.playlistBubble}>
             <Image
-              source={{ uri: message.playlistData?.coverUrl }}
+              source={{ uri: playlistCover }}
               style={styles.playlistCover}
             />
             <LinearGradient
@@ -257,12 +178,8 @@ const MessageBubble = ({
               style={styles.playlistGradient}
             />
             <View style={styles.playlistInfo}>
-              <Text style={styles.playlistName}>
-                {message.playlistData?.name}
-              </Text>
-              <Text style={styles.playlistCount}>
-                {message.playlistData?.songCount} songs
-              </Text>
+              <Text style={styles.playlistName}>{playlistName}</Text>
+              <Text style={styles.playlistCount}>{songCount} songs</Text>
             </View>
             <View style={styles.spotifyBadge}>
               <Ionicons name="musical-notes" size={14} color="#1DB954" />
@@ -278,12 +195,12 @@ const MessageBubble = ({
               <View style={styles.replyPreview}>
                 <View style={styles.replyBar} />
                 <Text style={styles.replyText} numberOfLines={1}>
-                  {replyMessage.text || "🎵 Shared a song"}
+                  {replyMessage.content || "🎵 Shared a song"}
                 </Text>
               </View>
             )}
             <Text style={[styles.messageText, isMe && styles.messageTextMe]}>
-              {message.text}
+              {message.content}
             </Text>
           </>
         );
@@ -292,110 +209,89 @@ const MessageBubble = ({
 
   return (
     <GestureDetector gesture={panGesture}>
-      <Animated.View
-        entering={FadeInUp.duration(300).springify()}
-        style={[
-          styles.messageRow,
-          isMe ? styles.messageRowMe : styles.messageRowOther,
-          animatedStyle,
-        ]}
-      >
-        {/* Reply indicator */}
-        {!isMe && (
-          <Animated.View
-            style={[
-              styles.replyIndicator,
-              {
-                opacity: interpolate(
-                  translateX.value,
-                  [0, 60],
-                  [0, 1],
-                  Extrapolation.CLAMP
-                ),
-              },
-            ]}
-          >
-            <Ionicons name="arrow-undo" size={20} color="#1DB954" />
-          </Animated.View>
-        )}
-
-        {/* Avatar */}
-        {!isMe && showAvatar && (
-          <Image source={{ uri: otherUser.avatar }} style={styles.avatar} />
-        )}
-        {!isMe && !showAvatar && <View style={styles.avatarPlaceholder} />}
-
-        {/* Bubble */}
-        <AnimatedPressable
-          onPressIn={handlePressIn}
-          onPressOut={handlePressOut}
-          onLongPress={() => onLongPress(message)}
-          delayLongPress={300}
+      <Animated.View entering={FadeInUp.duration(300).springify()}>
+        <Animated.View
           style={[
-            styles.bubble,
-            isMe ? styles.bubbleMe : styles.bubbleOther,
-            message.type === "song" && styles.bubbleSong,
-            message.type === "playlist" && styles.bubblePlaylist,
+            styles.messageRow,
+            isMe ? styles.messageRowMe : styles.messageRowOther,
+            animatedStyle,
           ]}
         >
-          {renderContent()}
-
-          {/* Timestamp & Status */}
-          <View style={styles.messageFooter}>
-            <Text style={[styles.timestamp, isMe && styles.timestampMe]}>
-              {formatTime(message.timestamp)}
-            </Text>
-            {isMe && (
-              <Ionicons
-                name={
-                  message.status === "read"
-                    ? "checkmark-done"
-                    : message.status === "delivered"
-                    ? "checkmark-done"
-                    : "checkmark"
-                }
-                size={14}
-                color={message.status === "read" ? "#1DB954" : "#666"}
-                style={styles.statusIcon}
-              />
-            )}
-          </View>
-
-          {/* Reactions */}
-          {message.reactions && message.reactions.length > 0 && (
-            <View
-              style={[
-                styles.reactionsContainer,
-                isMe ? styles.reactionsMe : styles.reactionsOther,
-              ]}
-            >
-              {message.reactions.map((r, i) => (
-                <Text key={i} style={styles.reaction}>
-                  {r.emoji}
-                </Text>
-              ))}
-            </View>
+          {/* Reply indicator */}
+          {!isMe && (
+            <Animated.View style={[styles.replyIndicator, replyIndicatorStyle]}>
+              <Ionicons name="arrow-undo" size={20} color="#1DB954" />
+            </Animated.View>
           )}
-        </AnimatedPressable>
 
-        {/* Reply indicator for own messages */}
-        {isMe && (
-          <Animated.View
+          {/* Avatar */}
+          {!isMe && showAvatar && (
+            <Image source={{ uri: otherUser.avatar }} style={styles.avatar} />
+          )}
+          {!isMe && !showAvatar && <View style={styles.avatarPlaceholder} />}
+
+          {/* Bubble */}
+          <AnimatedPressable
+            onPressIn={handlePressIn}
+            onPressOut={handlePressOut}
+            onLongPress={() => onLongPress(message)}
+            delayLongPress={300}
             style={[
-              styles.replyIndicatorMe,
-              {
-                opacity: interpolate(
-                  translateX.value,
-                  [0, -60],
-                  [0, 1],
-                  Extrapolation.CLAMP
-                ),
-              },
+              styles.bubble,
+              isMe ? styles.bubbleMe : styles.bubbleOther,
+              message.type === "song" && styles.bubbleSong,
+              message.type === "playlist" && styles.bubblePlaylist,
             ]}
           >
-            <Ionicons name="arrow-undo" size={20} color="#1DB954" />
-          </Animated.View>
-        )}
+            {renderContent()}
+
+            {/* Timestamp & Status */}
+            <View style={styles.messageFooter}>
+              <Text style={[styles.timestamp, isMe && styles.timestampMe]}>
+                {formatTime(new Date(message.createdAt))}
+              </Text>
+              {isMe && (
+                <Ionicons
+                  name={
+                    message.read
+                      ? "checkmark-done"
+                      : message.status === "delivered"
+                      ? "checkmark-done"
+                      : "checkmark"
+                  }
+                  size={14}
+                  color={message.read ? "#1DB954" : "#666"}
+                  style={styles.statusIcon}
+                />
+              )}
+            </View>
+
+            {/* Reactions */}
+            {message.reactions && message.reactions.length > 0 && (
+              <View
+                style={[
+                  styles.reactionsContainer,
+                  isMe ? styles.reactionsMe : styles.reactionsOther,
+                ]}
+              >
+                {message.reactions.map((r, i) => (
+                  <Text key={i} style={styles.reaction}>
+                    {r.emoji}
+                  </Text>
+                ))}
+              </View>
+            )}
+          </AnimatedPressable>
+
+          {/* Reply indicator for own messages */}
+          {isMe && (
+            <Animated.View
+              style={[styles.replyIndicatorMe, replyIndicatorMeStyle]}
+            >
+              <Ionicons name="arrow-undo" size={20} color="#1DB954" />
+            </Animated.View>
+          )}
+        </Animated.View>
       </Animated.View>
     </GestureDetector>
   );
@@ -473,81 +369,199 @@ const ReactionsModal = ({
 
 // Main Message Screen Component
 const MessageScreen = ({ route, navigation }: any) => {
+  const { user } = useAuth();
   const insets = useSafeAreaInsets();
-  const [messages, setMessages] = useState<Message[]>(DEMO_MESSAGES);
   const [inputText, setInputText] = useState("");
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
   const [showReactions, setShowReactions] = useState(false);
-  const [isTyping, setIsTyping] = useState(false);
+  const [showSongPicker, setShowSongPicker] = useState(false);
+  const [showPlaylistPicker, setShowPlaylistPicker] = useState(false);
   const flatListRef = useRef<FlatList>(null);
 
-  // Get user from route params or use demo data
+  // Get match and user from route params
+  const matchId = route?.params?.matchId;
   const routeUser = route?.params?.otherUser;
   const otherUser: ChatUser = routeUser
     ? {
         id: routeUser.id || routeUser.userId || "user",
         displayName: routeUser.displayName || routeUser.name || "User",
-        avatar: routeUser.avatar || routeUser.photoURL || DEMO_USER.avatar,
-        isOnline: routeUser.isOnline ?? true,
+        avatar:
+          routeUser.avatar ||
+          routeUser.photoURL ||
+          "https://via.placeholder.com/72",
+        isOnline: routeUser.isOnline ?? false,
         isTyping: false,
       }
-    : DEMO_USER;
+    : {
+        id: "unknown",
+        displayName: "User",
+        avatar: "https://via.placeholder.com/72",
+        isOnline: false,
+      };
 
-  // Simulate typing indicator
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsTyping(true);
-      setTimeout(() => setIsTyping(false), 3000);
-    }, 5000);
-    return () => clearTimeout(timer);
-  }, []);
+  // Real-time messaging hook
+  const {
+    messages,
+    isOtherUserTyping,
+    isOtherUserOnline,
+    sendMessage: sendRealtimeMessage,
+    sendTypingIndicator,
+    markAllAsRead,
+    loading,
+  } = useRealtimeMessaging({
+    matchId,
+    userId: user!.$id,
+    otherUserId: otherUser.id,
+    onNewMessage: () => {
+      // Scroll to bottom on new message
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    },
+  });
 
-  const sendMessage = useCallback(() => {
+  // Update typing status when input changes
+  const handleInputChange = (text: string) => {
+    setInputText(text);
+    sendTypingIndicator(text.length > 0);
+  };
+
+  const handleSendSong = async (track: SpotifyTrack) => {
+    try {
+      await sendRealtimeMessage(`Shared a song: ${track.name}`, "song", {
+        songData: track,
+      });
+      setShowSongPicker(false);
+    } catch (error) {
+      console.error("Error sending song:", error);
+      Alert.alert("Error", "Failed to send song");
+    }
+  };
+
+  const handleSendPlaylist = async (playlist: SpotifyPlaylist) => {
+    try {
+      await sendRealtimeMessage(
+        `Shared a playlist: ${playlist.name}`,
+        "playlist",
+        {
+          playlistData: playlist,
+        }
+      );
+      setShowPlaylistPicker(false);
+    } catch (error) {
+      console.error("Error sending playlist:", error);
+      Alert.alert("Error", "Failed to send playlist");
+    }
+  };
+
+  const handleSafetyOptions = () => {
+    Alert.alert("Safety Options", "Choose an action", [
+      {
+        text: "Unmatch",
+        style: "destructive",
+        onPress: () => {
+          Alert.alert(
+            "Unmatch",
+            "Are you sure? You won't be able to message this person again.",
+            [
+              { text: "Cancel", style: "cancel" },
+              {
+                text: "Unmatch",
+                style: "destructive",
+                onPress: async () => {
+                  try {
+                    if (matchId) {
+                      await userService.unmatch(matchId);
+                      navigation.goBack();
+                    }
+                  } catch (error) {
+                    Alert.alert("Error", "Failed to unmatch");
+                  }
+                },
+              },
+            ]
+          );
+        },
+      },
+      {
+        text: "Report",
+        style: "destructive",
+        onPress: () => {
+          Alert.alert(
+            "Report User",
+            "Report this user for inappropriate behavior?",
+            [
+              { text: "Cancel", style: "cancel" },
+              {
+                text: "Report",
+                style: "destructive",
+                onPress: async () => {
+                  try {
+                    if (user && otherUser) {
+                      await userService.reportUser(
+                        user.$id,
+                        otherUser.id,
+                        "Inappropriate behavior"
+                      );
+                      Alert.alert(
+                        "Reported",
+                        "User has been reported and blocked."
+                      );
+                      navigation.goBack();
+                    }
+                  } catch (error) {
+                    Alert.alert("Error", "Failed to report user");
+                  }
+                },
+              },
+            ]
+          );
+        },
+      },
+      {
+        text: "Block",
+        style: "destructive",
+        onPress: () => {
+          Alert.alert("Block User", "Are you sure? You won't see them again.", [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Block",
+              style: "destructive",
+              onPress: async () => {
+                try {
+                  if (user && otherUser) {
+                    await userService.blockUser(user.$id, otherUser.id);
+                    navigation.goBack();
+                  }
+                } catch (error) {
+                  Alert.alert("Error", "Failed to block user");
+                }
+              },
+            },
+          ]);
+        },
+      },
+      { text: "Cancel", style: "cancel" },
+    ]);
+  };
+
+  const handleSendMessage = async () => {
     if (!inputText.trim()) return;
 
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      senderId: "me",
-      text: inputText,
-      type: "text",
-      timestamp: new Date(),
-      status: "sent",
-      replyTo: replyingTo?.id,
-    };
-
-    setMessages((prev) => [...prev, newMessage]);
-    setInputText("");
-    setReplyingTo(null);
-
-    // Scroll to bottom
-    setTimeout(() => {
-      flatListRef.current?.scrollToEnd({ animated: true });
-    }, 100);
-
-    // Simulate delivery
-    setTimeout(() => {
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === newMessage.id ? { ...m, status: "delivered" } : m
-        )
-      );
-    }, 1000);
-  }, [inputText, replyingTo]);
+    try {
+      await sendRealtimeMessage(inputText);
+      setInputText("");
+      setReplyingTo(null);
+      sendTypingIndicator(false);
+    } catch (error) {
+      console.error("Failed to send message:", error);
+      Alert.alert("Error", "Failed to send message");
+    }
+  };
 
   const handleReaction = (emoji: string) => {
-    if (!selectedMessage) return;
-
-    setMessages((prev) =>
-      prev.map((m) =>
-        m.id === selectedMessage.id
-          ? {
-              ...m,
-              reactions: [...(m.reactions || []), { emoji, userId: "me" }],
-            }
-          : m
-      )
-    );
+    // TODO: Implement reaction logic in service
     setShowReactions(false);
     setSelectedMessage(null);
   };
@@ -562,13 +576,13 @@ const MessageScreen = ({ route, navigation }: any) => {
   };
 
   const renderMessage = ({ item, index }: { item: Message; index: number }) => {
-    const isMe = item.senderId === "me";
+    const isMe = user ? item.senderId === user.$id : false;
     const prevMessage = messages[index - 1];
     const showAvatar =
       !isMe && (!prevMessage || prevMessage.senderId !== item.senderId);
 
-    const replyMessage = item.replyTo
-      ? messages.find((m) => m.id === item.replyTo)
+    const replyMessage = item.replyToId
+      ? messages.find((m) => m.id === item.replyToId)
       : undefined;
 
     return (
@@ -603,14 +617,14 @@ const MessageScreen = ({ route, navigation }: any) => {
               source={{ uri: otherUser.avatar }}
               style={styles.headerAvatar}
             />
-            {otherUser.isOnline && <View style={styles.onlineIndicator} />}
+            {isOtherUserOnline && <View style={styles.onlineIndicator} />}
           </View>
           <View style={styles.headerInfo}>
             <Text style={styles.headerName}>{otherUser.displayName}</Text>
             <Text style={styles.headerStatus}>
-              {isTyping
+              {isOtherUserTyping
                 ? "typing..."
-                : otherUser.isOnline
+                : isOtherUserOnline
                 ? "Active now"
                 : otherUser.lastSeen}
             </Text>
@@ -618,6 +632,9 @@ const MessageScreen = ({ route, navigation }: any) => {
         </Pressable>
 
         <View style={styles.headerActions}>
+          <Pressable style={styles.headerAction} onPress={handleSafetyOptions}>
+            <Ionicons name="shield-checkmark" size={22} color="#fff" />
+          </Pressable>
           <Pressable style={styles.headerAction}>
             <Ionicons name="call" size={22} color="#1DB954" />
           </Pressable>
@@ -656,7 +673,7 @@ const MessageScreen = ({ route, navigation }: any) => {
         showsVerticalScrollIndicator={false}
         onContentSizeChange={() => flatListRef.current?.scrollToEnd()}
         ListFooterComponent={
-          isTyping ? <TypingIndicator user={otherUser} /> : null
+          isOtherUserTyping ? <TypingIndicator user={otherUser} /> : null
         }
       />
 
@@ -671,12 +688,12 @@ const MessageScreen = ({ route, navigation }: any) => {
           <View style={styles.replyingContent}>
             <Text style={styles.replyingLabel}>
               Replying to{" "}
-              {replyingTo.senderId === "me"
+              {user && replyingTo.senderId === user.$id
                 ? "yourself"
                 : otherUser.displayName}
             </Text>
             <Text style={styles.replyingText} numberOfLines={1}>
-              {replyingTo.text || "🎵 Shared a song"}
+              {replyingTo.content || "🎵 Shared a song"}
             </Text>
           </View>
           <Pressable onPress={() => setReplyingTo(null)}>
@@ -688,7 +705,7 @@ const MessageScreen = ({ route, navigation }: any) => {
       {/* Input Area */}
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={0}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
       >
         <Animated.View
           entering={FadeInUp.duration(400)}
@@ -709,7 +726,7 @@ const MessageScreen = ({ route, navigation }: any) => {
             <View style={styles.inputWrapper}>
               <TextInput
                 value={inputText}
-                onChangeText={setInputText}
+                onChangeText={handleInputChange}
                 placeholder="Message..."
                 placeholderTextColor="#666"
                 style={styles.input}
@@ -723,7 +740,7 @@ const MessageScreen = ({ route, navigation }: any) => {
 
             {/* Send / Voice Button */}
             {inputText.trim() ? (
-              <Pressable onPress={sendMessage} style={styles.sendButton}>
+              <Pressable onPress={handleSendMessage} style={styles.sendButton}>
                 <LinearGradient
                   colors={["#1DB954", "#1ed760"]}
                   style={styles.sendGradient}
@@ -740,25 +757,61 @@ const MessageScreen = ({ route, navigation }: any) => {
 
           {/* Quick Actions */}
           <View style={styles.quickActions}>
-            <Pressable style={styles.quickAction}>
+            <Pressable
+              style={styles.quickAction}
+              onPress={() => setShowSongPicker(true)}
+            >
               <Ionicons name="musical-note" size={18} color="#1DB954" />
               <Text style={styles.quickActionText}>Song</Text>
             </Pressable>
-            <Pressable style={styles.quickAction}>
+            <Pressable
+              style={styles.quickAction}
+              onPress={() => setShowPlaylistPicker(true)}
+            >
               <Ionicons name="list" size={18} color="#1DB954" />
               <Text style={styles.quickActionText}>Playlist</Text>
             </Pressable>
-            <Pressable style={styles.quickAction}>
+            <Pressable
+              style={styles.quickAction}
+              onPress={() =>
+                Alert.alert(
+                  "Coming Soon",
+                  "Photo sharing will be available soon!"
+                )
+              }
+            >
               <Ionicons name="image" size={18} color="#1DB954" />
               <Text style={styles.quickActionText}>Photo</Text>
             </Pressable>
-            <Pressable style={styles.quickAction}>
+            <Pressable
+              style={styles.quickAction}
+              onPress={() =>
+                Alert.alert(
+                  "Coming Soon",
+                  "GIF sharing will be available soon!"
+                )
+              }
+            >
               <Ionicons name="gift" size={18} color="#1DB954" />
               <Text style={styles.quickActionText}>GIF</Text>
             </Pressable>
           </View>
         </Animated.View>
       </KeyboardAvoidingView>
+
+      {/* Song Picker Modal */}
+      <SongPickerModal
+        visible={showSongPicker}
+        onClose={() => setShowSongPicker(false)}
+        onSelect={handleSendSong}
+      />
+
+      {/* Playlist Picker Modal */}
+      <PlaylistPickerModal
+        visible={showPlaylistPicker}
+        onClose={() => setShowPlaylistPicker(false)}
+        onSelect={handleSendPlaylist}
+      />
 
       {/* Reactions Modal */}
       <ReactionsModal

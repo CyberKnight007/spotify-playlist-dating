@@ -78,6 +78,12 @@ export const AnimatedButton: React.FC<AnimatedButtonProps> = ({
   };
 
   if (variant === "primary") {
+    const paddingStyles = {
+      sm: { paddingVertical: 8, paddingHorizontal: 16 },
+      md: { paddingVertical: 16, paddingHorizontal: 24 },
+      lg: { paddingVertical: 20, paddingHorizontal: 32 },
+    };
+
     return (
       <AnimatedPressable
         onPress={onPress}
@@ -91,10 +97,24 @@ export const AnimatedButton: React.FC<AnimatedButtonProps> = ({
           colors={["#1DB954", "#1ed760"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
-          className={`rounded-2xl ${sizeClasses[size]} flex-row items-center justify-center`}
+          style={[
+            {
+              borderRadius: 16,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+            },
+            paddingStyles[size],
+          ]}
         >
           {icon && <View className="mr-2">{icon}</View>}
-          <Text className={`${textSizeClasses[size]} text-dark-950 font-bold`}>
+          <Text
+            style={{
+              color: "#0a0a0a",
+              fontWeight: "700",
+              fontSize: size === "lg" ? 18 : size === "md" ? 16 : 14,
+            }}
+          >
             {loading ? "Loading..." : title}
           </Text>
         </LinearGradient>

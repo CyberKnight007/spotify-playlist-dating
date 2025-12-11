@@ -1,9 +1,9 @@
-// Appwrite Configuration
+// Appwrite Configuration - Hardcoded for reliability
 export const APPWRITE_CONFIG = {
-  endpoint:
-    process.env.EXPO_PUBLIC_APPWRITE_ENDPOINT || "https://cloud.appwrite.io/v1",
-  projectId: process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID || "",
-  databaseId: process.env.EXPO_PUBLIC_APPWRITE_DATABASE_ID || "",
+  endpoint: "https://sgp.cloud.appwrite.io/v1",
+  projectId: "692c0bae0033b9e34774",
+  databaseId: "6933e7230002691f918d", // beatbond database (created via CLI)
+  storageBucketId: "avatars", // For user profile images
 };
 
 // Spotify Configuration
@@ -14,9 +14,10 @@ export const SPOTIFY_CONFIG = {
     process.env.EXPO_PUBLIC_SPOTIFY_REDIRECT_URI || "playlistmatch://callback",
 };
 
-// Collection IDs
+// Collection IDs - Hardcoded for reliability
 export const COLLECTIONS = {
-  users: process.env.EXPO_PUBLIC_APPWRITE_USERS_COLLECTION_ID || "",
-  swipes: process.env.EXPO_PUBLIC_APPWRITE_SWIPES_COLLECTION_ID || "",
-  matches: process.env.EXPO_PUBLIC_APPWRITE_MATCHES_COLLECTION_ID || "",
+  users: "users",
+  swipes: "swipes",
+  matches: "matches",
+  messages: "messages",
 };

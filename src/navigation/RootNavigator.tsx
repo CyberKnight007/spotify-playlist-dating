@@ -1,7 +1,7 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   View,
@@ -19,6 +19,7 @@ import Animated, {
   withSpring,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { useAuth } from "../context/AuthContext";
 import { useSpotify } from "../context/SpotifyContext";
@@ -29,7 +30,11 @@ import OnboardingScreen from "../screens/OnboardingScreen";
 import PlaylistScreen from "../screens/PlaylistScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 import SignUpScreen from "../screens/SignUpScreen";
+import OTPSignUpScreen from "../screens/OTPSignUpScreen";
+import ProfileSetupScreen from "../screens/ProfileSetupScreen";
 import SwipeScreen from "../screens/SwipeScreen";
+import WelcomeOnboardingScreen from "../screens/WelcomeOnboardingScreen";
+import LikesScreen from "../screens/LikesScreen";
 import { palette } from "../theme/colors";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -202,12 +207,47 @@ const FloatingTabBar = ({
   );
 };
 
-const AuthStack = () => (
-  <Stack.Navigator screenOptions={{ headerShown: false }}>
-    <Stack.Screen name="Login" component={LoginScreen} />
-    <Stack.Screen name="SignUp" component={SignUpScreen} />
-  </Stack.Navigator>
-);
+const AuthStack = () => {
+  const [hasSeenOnboarding, setHasSeenOnboarding] = useState<boolean | null>(
+    null
+  );
+
+  useEffect(() => {
+    const checkOnboarding = async () => {
+      try {
+        const value = await AsyncStorage.getItem("@onboarding_complete");
+        setHasSeenOnboarding(value === "true");
+      } catch {
+        setHasSeenOnboarding(false);
+      }
+    };
+    checkOnboarding();
+  }, []);
+
+  if (hasSeenOnboarding === null) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={palette.primary} />
+      </View>
+    );
+  }
+
+  return (
+    <Stack.Navigator
+      screenOptions={{ headerShown: false }}
+      initialRouteName={hasSeenOnboarding ? "Login" : "WelcomeOnboarding"}
+    >
+      <Stack.Screen
+        name="WelcomeOnboarding"
+        component={WelcomeOnboardingScreen}
+      />
+      <Stack.Screen name="Login" component={LoginScreen} />
+      <Stack.Screen name="SignUp" component={SignUpScreen} />
+      <Stack.Screen name="OTPSignUp" component={OTPSignUpScreen} />
+      <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
+    </Stack.Navigator>
+  );
+};
 
 const TabNavigator = () => (
   <Tab.Navigator
@@ -223,7 +263,35 @@ const TabNavigator = () => (
 
 const AppStack = () => {
   const { connected } = useSpotify();
+  const { needsProfileSetup, checkProfileCompletion } = useAuth();
+  const [checkingProfile, setCheckingProfile] = useState(true);
 
+  useEffect(() => {
+    const checkProfile = async () => {
+      await checkProfileCompletion();
+      setCheckingProfile(false);
+    };
+    checkProfile();
+  }, []);
+
+  if (checkingProfile) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={palette.primary} />
+      </View>
+    );
+  }
+
+  // If profile setup is needed, show that first
+  if (needsProfileSetup) {
+    return (
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
+      </Stack.Navigator>
+    );
+  }
+
+  // If Spotify not connected, show onboarding
   if (!connected) {
     return (
       <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -240,6 +308,20 @@ const AppStack = () => {
         component={MessageScreen}
         options={{
           animation: "slide_from_right",
+        }}
+      />
+      <Stack.Screen
+        name="ProfileSetup"
+        component={ProfileSetupScreen}
+        options={{
+          animation: "slide_from_bottom",
+        }}
+      />
+      <Stack.Screen
+        name="Likes"
+        component={LikesScreen}
+        options={{
+          animation: "slide_from_bottom",
         }}
       />
     </Stack.Navigator>

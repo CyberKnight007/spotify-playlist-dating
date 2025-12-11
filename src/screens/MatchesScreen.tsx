@@ -7,7 +7,9 @@ import {
   ScrollView,
   RefreshControl,
   Dimensions,
+  Modal,
 } from "react-native";
+import { BlurView } from "expo-blur";
 import Animated, {
   FadeIn,
   FadeInDown,
@@ -30,265 +32,78 @@ import { useAuth } from "../context/AuthContext";
 import { userService } from "../services/userService";
 import { Match, UserProfile } from "../types/user";
 
+import { SwipeCard as SwipeCardType } from "../types/user";
+
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-// ========================
-// MOCK DATA FOR DEMO MODE
-// ========================
-const DEMO_MATCHES: Match[] = [
-  {
-    id: "match-1",
-    userId1: "demo-user",
-    userId2: "luna-chen",
-    user1Profile: { id: "demo-user", displayName: "You" },
-    user2Profile: {
-      id: "luna-chen",
-      displayName: "Luna Chen",
-      avatar:
-        "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400",
-      bio: "Indie soul searching through melodies 🎵",
-      topGenres: ["indie", "dream pop", "shoegaze"],
-      topArtists: ["Tame Impala", "Beach House", "Phoebe Bridgers"],
-    },
-    compatibility: 94,
-    sharedAttributes: ["Dream Pop", "Late Night Vibes", "Indie"],
-    createdAt: new Date().toISOString(),
-    lastMessage: "That Tame Impala concert was amazing! 🎸",
-    lastMessageTime: "2m ago",
-    unreadCount: 2,
-    isOnline: true,
-    sharedPlaylist: "Indie Dreams",
-    sharedSongs: 47,
-  },
-  {
-    id: "match-2",
-    userId1: "demo-user",
-    userId2: "marcus-williams",
-    user1Profile: { id: "demo-user", displayName: "You" },
-    user2Profile: {
-      id: "marcus-williams",
-      displayName: "Marcus Williams",
-      avatar:
-        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400",
-      bio: "Jazz at sunset, hip-hop at midnight 🎷",
-      topGenres: ["jazz", "hip-hop", "neo-soul"],
-      topArtists: ["Kendrick Lamar", "Robert Glasper", "Anderson .Paak"],
-    },
-    compatibility: 89,
-    sharedAttributes: ["Neo-Soul", "Chill Beats", "Late Night"],
-    createdAt: new Date().toISOString(),
-    lastMessage: "Have you heard the new Glasper album?",
-    lastMessageTime: "15m ago",
-    unreadCount: 0,
-    isOnline: true,
-    sharedPlaylist: "Jazz & Hip-Hop Fusion",
-    sharedSongs: 32,
-  },
-  {
-    id: "match-3",
-    userId1: "demo-user",
-    userId2: "sage-morrison",
-    user1Profile: { id: "demo-user", displayName: "You" },
-    user2Profile: {
-      id: "sage-morrison",
-      displayName: "Sage Morrison",
-      avatar:
-        "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400",
-      bio: "Folk stories and acoustic adventures 🌿",
-      topGenres: ["folk", "acoustic", "americana"],
-      topArtists: ["Bon Iver", "Phoebe Bridgers", "Fleet Foxes"],
-    },
-    compatibility: 92,
-    sharedAttributes: ["Acoustic", "Singer-Songwriter", "Cozy Vibes"],
-    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    lastMessage: "Let's make a roadtrip playlist! 🚗",
-    lastMessageTime: "1h ago",
-    unreadCount: 1,
-    isOnline: false,
-    sharedPlaylist: "Campfire Sessions",
-    sharedSongs: 56,
-  },
-  {
-    id: "match-4",
-    userId1: "demo-user",
-    userId2: "kai-nakamura",
-    user1Profile: { id: "demo-user", displayName: "You" },
-    user2Profile: {
-      id: "kai-nakamura",
-      displayName: "Kai Nakamura",
-      avatar:
-        "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400",
-      bio: "Electronic beats & city nights 🌃",
-      topGenres: ["electronic", "house", "techno"],
-      topArtists: ["Disclosure", "Kaytranada", "Jamie xx"],
-    },
-    compatibility: 87,
-    sharedAttributes: ["Electronic", "Dance", "House"],
-    createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-    lastMessage: "That Boiler Room set was fire! 🔥",
-    lastMessageTime: "3h ago",
-    unreadCount: 0,
-    isOnline: true,
-    sharedPlaylist: "Club Nights",
-    sharedSongs: 28,
-  },
-  {
-    id: "match-5",
-    userId1: "demo-user",
-    userId2: "aria-patel",
-    user1Profile: { id: "demo-user", displayName: "You" },
-    user2Profile: {
-      id: "aria-patel",
-      displayName: "Aria Patel",
-      avatar:
-        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400",
-      bio: "Classical trained, pop obsessed 🎹",
-      topGenres: ["classical", "pop", "orchestral"],
-      topArtists: ["Jacob Collier", "Norah Jones", "Ludovico Einaudi"],
-    },
-    compatibility: 85,
-    sharedAttributes: ["Piano", "Classical Crossover", "Vocal"],
-    createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-    lastMessage: "That piano cover was beautiful! 😍",
-    lastMessageTime: "5h ago",
-    unreadCount: 0,
-    isOnline: false,
-    sharedPlaylist: "Piano Moments",
-    sharedSongs: 23,
-  },
-  {
-    id: "match-6",
-    userId1: "demo-user",
-    userId2: "jordan-blake",
-    user1Profile: { id: "demo-user", displayName: "You" },
-    user2Profile: {
-      id: "jordan-blake",
-      displayName: "Jordan Blake",
-      avatar:
-        "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400",
-      bio: "Rock classics meet modern alt 🎸",
-      topGenres: ["rock", "alternative", "grunge"],
-      topArtists: ["Arctic Monkeys", "The Strokes", "Nirvana"],
-    },
-    compatibility: 91,
-    sharedAttributes: ["Rock", "Alternative", "Guitar"],
-    createdAt: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
-    lastMessage: "Arctic Monkeys tickets went on sale!",
-    lastMessageTime: "8h ago",
-    unreadCount: 3,
-    isOnline: true,
-    sharedPlaylist: "Rock Anthems",
-    sharedSongs: 64,
-  },
-  {
-    id: "match-7",
-    userId1: "demo-user",
-    userId2: "maya-rodriguez",
-    user1Profile: { id: "demo-user", displayName: "You" },
-    user2Profile: {
-      id: "maya-rodriguez",
-      displayName: "Maya Rodriguez",
-      avatar:
-        "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400",
-      bio: "Latin rhythms in my soul 💃",
-      topGenres: ["latin", "reggaeton", "salsa"],
-      topArtists: ["Bad Bunny", "J Balvin", "Rosalía"],
-    },
-    compatibility: 83,
-    sharedAttributes: ["Latin", "Dance", "Party"],
-    createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
-    lastMessage: "Salsa night this Friday? 💃",
-    lastMessageTime: "12h ago",
-    unreadCount: 0,
-    isOnline: false,
-    sharedPlaylist: "Latin Nights",
-    sharedSongs: 41,
-  },
-  {
-    id: "match-8",
-    userId1: "demo-user",
-    userId2: "river-hart",
-    user1Profile: { id: "demo-user", displayName: "You" },
-    user2Profile: {
-      id: "river-hart",
-      displayName: "River Hart",
-      avatar:
-        "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400",
-      bio: "Lo-fi beats to chill to 🌙",
-      topGenres: ["lo-fi", "chill-hop", "ambient"],
-      topArtists: ["nujabes", "Tomppabeats", "Jinsang"],
-    },
-    compatibility: 88,
-    sharedAttributes: ["Lo-Fi", "Study Beats", "Chill"],
-    createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-    lastMessage: "Perfect study playlist! Thanks 📚",
-    lastMessageTime: "1d ago",
-    unreadCount: 0,
-    isOnline: false,
-    sharedPlaylist: "Late Night Study",
-    sharedSongs: 89,
-  },
-];
+// Premium Modal Component
+const PremiumModal = ({
+  visible,
+  onClose,
+  onUpgrade,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  onUpgrade: () => void;
+}) => (
+  <Modal
+    visible={visible}
+    transparent
+    animationType="slide"
+    onRequestClose={onClose}
+  >
+    <BlurView
+      intensity={80}
+      tint="dark"
+      style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+    >
+      <View className="bg-dark-900 w-[90%] rounded-3xl overflow-hidden border border-primary-500/30">
+        <LinearGradient
+          colors={["#1DB954", "#158a3d"]}
+          className="p-6 items-center"
+        >
+          <View className="w-16 h-16 rounded-full bg-white/20 items-center justify-center mb-4">
+            <Ionicons name="heart" size={32} color="#fff" />
+          </View>
+          <Text className="text-white text-2xl font-bold text-center">
+            See Who Liked You
+          </Text>
+          <Text className="text-white/80 text-center mt-2">
+            Upgrade to Premium to see everyone who swiped right on you
+            instantly!
+          </Text>
+        </LinearGradient>
 
-// People who liked you (demo)
-const DEMO_LIKES: UserProfile[] = [
-  {
-    id: "like-1",
-    displayName: "Zoe Martinez",
-    avatar:
-      "https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?w=400",
-    bio: "R&B nights and sunrise coffees ☕",
-    topGenres: ["r&b", "soul", "neo-soul"],
-  },
-  {
-    id: "like-2",
-    displayName: "Ethan Brooks",
-    avatar:
-      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400",
-    bio: "Metal head with a soft spot for jazz 🎺",
-    topGenres: ["metal", "jazz", "progressive"],
-  },
-  {
-    id: "like-3",
-    displayName: "Ava Thompson",
-    avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400",
-    bio: "Country roads, EDM festivals 🤠",
-    topGenres: ["country", "edm", "pop"],
-  },
-  {
-    id: "like-4",
-    displayName: "Noah Kim",
-    avatar:
-      "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=400",
-    bio: "K-pop stan with indie secrets 🎤",
-    topGenres: ["k-pop", "indie", "electronic"],
-  },
-];
+        <View className="p-6">
+          <View className="flex-row items-center mb-4">
+            <Ionicons name="checkmark-circle" size={24} color="#1DB954" />
+            <Text className="text-white ml-3 text-lg">Unlimited Swipes</Text>
+          </View>
+          <View className="flex-row items-center mb-4">
+            <Ionicons name="checkmark-circle" size={24} color="#1DB954" />
+            <Text className="text-white ml-3 text-lg">See Who Liked You</Text>
+          </View>
+          <View className="flex-row items-center mb-6">
+            <Ionicons name="checkmark-circle" size={24} color="#1DB954" />
+            <Text className="text-white ml-3 text-lg">Travel Mode</Text>
+          </View>
 
-// Super likes received (demo)
-const DEMO_SUPER_LIKES: UserProfile[] = [
-  {
-    id: "super-1",
-    displayName: "Olivia Chen",
-    avatar:
-      "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=400",
-    bio: "Your taste in music is impeccable ⭐",
-    topGenres: ["indie", "alternative", "dream pop"],
-  },
-  {
-    id: "super-2",
-    displayName: "Liam Foster",
-    avatar:
-      "https://images.unsplash.com/photo-1504257432389-52343af06ae3?w=400",
-    bio: "We have 47 songs in common! 🎵",
-    topGenres: ["rock", "indie", "folk"],
-  },
-];
+          <Pressable
+            onPress={onUpgrade}
+            className="bg-primary-500 py-4 rounded-full items-center mb-3"
+          >
+            <Text className="text-dark-950 font-bold text-lg">Get Premium</Text>
+          </Pressable>
 
-// =================
-// ENHANCED COMPONENTS
-// =================
+          <Pressable onPress={onClose} className="py-3 items-center">
+            <Text className="text-dark-400 font-medium">Maybe Later</Text>
+          </Pressable>
+        </View>
+      </View>
+    </BlurView>
+  </Modal>
+);
 
 // Match Card Component with enhanced features
 const MatchCard = ({
@@ -300,7 +115,11 @@ const MatchCard = ({
   index: number;
   onPress: () => void;
 }) => {
-  const otherUser = match.user2Profile;
+  const otherUser = match.user2Profile || {
+    id: "unknown",
+    displayName: "Unknown User",
+    avatar: "https://via.placeholder.com/72",
+  };
   const scale = useSharedValue(1);
   const pulse = useSharedValue(1);
 
@@ -514,9 +333,11 @@ const NewMatchBadge = ({
 const LikesYouCard = ({
   users,
   onPress,
+  isPremium = false,
 }: {
   users: UserProfile[];
   onPress: () => void;
+  isPremium?: boolean;
 }) => {
   const scale = useSharedValue(1);
 
@@ -561,6 +382,7 @@ const LikesYouCard = ({
                         marginLeft: i > 0 ? -16 : 0,
                         zIndex: 3 - i,
                       }}
+                      blurRadius={isPremium ? 0 : 10}
                     />
                   ))}
                 </View>
@@ -569,7 +391,7 @@ const LikesYouCard = ({
                     {users.length} Likes You
                   </Text>
                   <Text className="text-white/60 text-sm">
-                    See who's into your vibe
+                    {isPremium ? "Tap to see them" : "Upgrade to see who"}
                   </Text>
                 </View>
               </View>
@@ -702,15 +524,14 @@ const FilterTabs = ({
 // MAIN MATCHES SCREEN
 // ========================
 const MatchesScreen = () => {
-  const { user } = useAuth();
+  const { user, userProfile, updateProfile } = useAuth();
   const navigation = useNavigation<any>();
   const [matches, setMatches] = useState<Match[]>([]);
+  const [receivedLikes, setReceivedLikes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeFilter, setActiveFilter] = useState("all");
-
-  // Demo mode - load mock data when no authenticated user
-  const isDemoMode = !user;
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
 
   useEffect(() => {
     loadMatches();
@@ -719,20 +540,38 @@ const MatchesScreen = () => {
   const loadMatches = async () => {
     setLoading(true);
     try {
-      if (isDemoMode) {
-        // Load demo data
-        await new Promise((resolve) => setTimeout(resolve, 800)); // Simulate loading
-        setMatches(DEMO_MATCHES);
-      } else if (user) {
-        const userMatches = await userService.getMatches(user.$id);
+      if (user) {
+        const [userMatches, likes] = await Promise.all([
+          userService.getMatches(user.$id),
+          userService.getReceivedLikes(user.$id),
+        ]);
         setMatches(userMatches);
+        setReceivedLikes(likes);
       }
     } catch (error) {
       console.error("Failed to load matches:", error);
-      // Fallback to demo data on error
-      setMatches(DEMO_MATCHES);
+      setMatches([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleUpgrade = async () => {
+    // Simulate upgrade
+    if (userProfile) {
+      await updateProfile({ isPremium: true });
+      setShowPremiumModal(false);
+      // Refresh to show unblurred
+      loadMatches();
+    }
+  };
+
+  const handleLikesPress = () => {
+    if (userProfile?.isPremium) {
+      // Navigate to Likes screen
+      navigation.getParent()?.navigate("Likes");
+    } else {
+      setShowPremiumModal(true);
     }
   };
 
@@ -781,16 +620,7 @@ const MatchesScreen = () => {
       >
         <View className="flex-row items-center justify-between">
           <View>
-            <View className="flex-row items-center">
-              <Text className="text-white text-3xl font-bold">Matches</Text>
-              {isDemoMode && (
-                <View className="ml-3 bg-purple-500/20 px-2 py-0.5 rounded-full">
-                  <Text className="text-purple-400 text-xs font-medium">
-                    Demo
-                  </Text>
-                </View>
-              )}
-            </View>
+            <Text className="text-white text-3xl font-bold">Matches</Text>
             <Text className="text-dark-400 text-base mt-1">
               {matches.length} people vibe with you
             </Text>
@@ -817,17 +647,13 @@ const MatchesScreen = () => {
           />
         }
       >
-        {/* Likes You Card (Premium Feature) */}
-        {(isDemoMode || DEMO_LIKES.length > 0) && (
+        {/* Likes You Section */}
+        {receivedLikes.length > 0 && (
           <LikesYouCard
-            users={DEMO_LIKES}
-            onPress={() => console.log("View likes")}
+            users={receivedLikes}
+            onPress={handleLikesPress}
+            isPremium={userProfile?.isPremium}
           />
-        )}
-
-        {/* Super Likes Section */}
-        {(isDemoMode || DEMO_SUPER_LIKES.length > 0) && (
-          <SuperLikesSection users={DEMO_SUPER_LIKES} />
         )}
 
         {/* New Matches Section */}
@@ -854,7 +680,12 @@ const MatchesScreen = () => {
               {newMatches.map((match, index) => (
                 <NewMatchBadge
                   key={match.id}
-                  user={match.user2Profile}
+                  user={
+                    match.user2Profile || {
+                      id: "unknown",
+                      displayName: "Unknown",
+                    }
+                  }
                   index={index}
                 />
               ))}
@@ -927,6 +758,12 @@ const MatchesScreen = () => {
 
         <View className="h-32" />
       </ScrollView>
+
+      <PremiumModal
+        visible={showPremiumModal}
+        onClose={() => setShowPremiumModal(false)}
+        onUpgrade={handleUpgrade}
+      />
     </View>
   );
 };

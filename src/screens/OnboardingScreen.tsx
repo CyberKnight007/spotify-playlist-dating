@@ -62,7 +62,8 @@ const slides = [
 ];
 
 const OnboardingScreen = () => {
-  const { connect, skipWithMockData, loading, error } = useSpotify();
+  const { connectSpotify, skipWithMockData, loading, error, connecting } =
+    useSpotify();
   const [currentSlide, setCurrentSlide] = useState(0);
 
   // Animation values
@@ -214,8 +215,8 @@ const OnboardingScreen = () => {
         {/* Connect Button */}
         <Animated.View entering={FadeInUp.delay(600).duration(500)}>
           <Pressable
-            onPress={connect}
-            disabled={loading}
+            onPress={connectSpotify}
+            disabled={loading || connecting}
             className="overflow-hidden rounded-2xl mb-4"
           >
             <LinearGradient
@@ -226,7 +227,9 @@ const OnboardingScreen = () => {
             >
               <SpotifyIcon size={24} color="#0a0a0a" />
               <Text className="text-dark-950 font-bold text-lg ml-3">
-                {loading ? "Connecting..." : "Connect with Spotify"}
+                {loading || connecting
+                  ? "Connecting..."
+                  : "Connect with Spotify"}
               </Text>
             </LinearGradient>
           </Pressable>

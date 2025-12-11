@@ -1,220 +1,100 @@
-import { databases, DATABASE_ID, COLLECTIONS, ID, Query } from "./appwrite";
+import {
+  databases,
+  DATABASE_ID,
+  COLLECTIONS,
+  ID,
+  Query,
+  storage,
+  Permission,
+  Role,
+} from "./appwrite";
+import { APPWRITE_CONFIG } from "../config/apiKeys";
 import { UserProfile, SwipeAction, Match, SwipeCard } from "../types/user";
-import { calculateCompatibility } from "../utils/matching";
-import { mockPlaylists, mockUsers } from "../api/spotify";
+import { matchingService } from "./matchingService";
 
-// ==================== MOCK SWIPE CARDS ====================
-const mockSwipeCards: SwipeCard[] = [
-  {
-    userId: "user-2",
-    displayName: "Luna Chen",
-    age: 26,
-    pronouns: "she/her",
-    bio: "Night owl DJ who lives for the underground scene 🎧 Looking for someone to share late night playlists with",
-    city: "Los Angeles, CA",
-    avatar:
-      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400",
-    activePlaylist: mockPlaylists[0],
-    anthem: mockPlaylists[0].tracks[0],
-    compatibility: 94,
-    sharedAttributes: [
-      "High energy",
-      "Club vibes",
-      "Late night listener",
-      "Electronic",
-    ],
-  },
-  {
-    userId: "user-3",
-    displayName: "Marcus Williams",
-    age: 29,
-    pronouns: "he/him",
-    bio: "Jazz enthusiast by day, electronic producer by night 🎹 Let's make beautiful music together",
-    city: "Chicago, IL",
-    avatar:
-      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400",
-    activePlaylist: mockPlaylists[4],
-    anthem: mockPlaylists[4].tracks[2],
-    compatibility: 87,
-    sharedAttributes: ["Jazz lover", "Instrumental", "Chill vibes", "Producer"],
-  },
-  {
-    userId: "user-4",
-    displayName: "Sage Morrison",
-    age: 24,
-    pronouns: "they/them",
-    bio: "Vinyl collector | Synth lover | Always finding new sounds 🎶 My record collection is my personality",
-    city: "Portland, OR",
-    avatar:
-      "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400",
-    activePlaylist: mockPlaylists[2],
-    anthem: mockPlaylists[2].tracks[1],
-    compatibility: 82,
-    sharedAttributes: [
-      "Vinyl enthusiast",
-      "Synth sounds",
-      "Retro aesthetic",
-      "Indie",
-    ],
-  },
-  {
-    userId: "user-5",
-    displayName: "Kai Nakamura",
-    age: 27,
-    pronouns: "he/him",
-    bio: "From Tokyo with love 🇯🇵 City pop and future funk are my jam. Always down for a listening party!",
-    city: "San Francisco, CA",
-    avatar:
-      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400",
-    activePlaylist: mockPlaylists[2],
-    anthem: mockPlaylists[2].tracks[4],
-    compatibility: 79,
-    sharedAttributes: ["City pop", "Future funk", "Japanese music", "Retro"],
-  },
-  {
-    userId: "user-6",
-    displayName: "Aria Patel",
-    age: 25,
-    pronouns: "she/her",
-    bio: "Classical meets electronic. Violinist exploring new dimensions 🎻✨ Seeking sonic adventurers",
-    city: "Austin, TX",
-    avatar:
-      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400",
-    activePlaylist: mockPlaylists[1],
-    anthem: mockPlaylists[1].tracks[0],
-    compatibility: 76,
-    sharedAttributes: [
-      "Classical fusion",
-      "Experimental",
-      "Ambient",
-      "Live music",
-    ],
-  },
-  {
-    userId: "user-7",
-    displayName: "Jordan Blake",
-    age: 23,
-    pronouns: "they/them",
-    bio: "Bedroom producer | Lo-fi curator | Coffee addict ☕ Looking for someone to vibe with at 2am",
-    city: "Seattle, WA",
-    avatar:
-      "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400",
-    activePlaylist: mockPlaylists[3],
-    anthem: mockPlaylists[3].tracks[3],
-    compatibility: 73,
-    sharedAttributes: [
-      "Lo-fi beats",
-      "Bedroom producer",
-      "Chill hop",
-      "Night owl",
-    ],
-  },
-  {
-    userId: "user-8",
-    displayName: "Maya Rodriguez",
-    age: 28,
-    pronouns: "she/her",
-    bio: "Latin beats meet indie rock. Always dancing 💃 Music festivals are my happy place",
-    city: "Miami, FL",
-    avatar:
-      "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400",
-    activePlaylist: mockPlaylists[5],
-    anthem: mockPlaylists[5].tracks[2],
-    compatibility: 68,
-    sharedAttributes: [
-      "Latin vibes",
-      "Indie rock",
-      "Dancing mood",
-      "Festival goer",
-    ],
-  },
-  {
-    userId: "user-9",
-    displayName: "Alex Rivera",
-    age: 30,
-    pronouns: "he/him",
-    bio: "Music journalist | Playlist perfectionist | Always hunting for the next obsession 📝🎵",
-    city: "New York, NY",
-    avatar:
-      "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400",
-    activePlaylist: mockPlaylists[3],
-    anthem: mockPlaylists[3].tracks[1],
-    compatibility: 85,
-    sharedAttributes: [
-      "Music discovery",
-      "Diverse taste",
-      "Deep cuts",
-      "Storytelling",
-    ],
-  },
-  {
-    userId: "user-10",
-    displayName: "Zoe Kim",
-    age: 22,
-    pronouns: "she/her",
-    bio: "K-pop to shoegaze, I don't discriminate 🌈 Let's share headphones and talk for hours",
-    city: "Boston, MA",
-    avatar:
-      "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400",
-    activePlaylist: mockPlaylists[5],
-    anthem: mockPlaylists[5].tracks[0],
-    compatibility: 71,
-    sharedAttributes: ["K-pop", "Shoegaze", "Eclectic taste", "Open minded"],
-  },
-  {
-    userId: "user-11",
-    displayName: "Devon Taylor",
-    age: 26,
-    pronouns: "they/them",
-    bio: "90s hip hop head | Turntablist | Crate digger 📀 Looking for my duet partner",
-    city: "Atlanta, GA",
-    avatar:
-      "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400",
-    activePlaylist: mockPlaylists[0],
-    anthem: mockPlaylists[0].tracks[5],
-    compatibility: 77,
-    sharedAttributes: ["Hip hop", "Vinyl culture", "90s music", "DJ"],
-  },
-];
-
-// Track swiped users in memory for demo
-let swipedUserIds = new Set<string>();
-
-// Reset function for demo mode
-export const resetMockSwipes = () => {
-  swipedUserIds = new Set<string>();
-};
-
-// Export mock data for use elsewhere
-export { mockSwipeCards };
+const STORAGE_BUCKET_ID = APPWRITE_CONFIG.storageBucketId;
 
 export const userService = {
+  // ==================== PROFILE MANAGEMENT ====================
   async createProfile(
     userId: string,
     profileData: Partial<UserProfile>
   ): Promise<void> {
     const now = new Date().toISOString();
-    await databases.createDocument(DATABASE_ID, COLLECTIONS.USERS, userId, {
-      ...profileData,
+
+    // Only include fields that are guaranteed to exist in the schema
+    const docData: Record<string, any> = {
       id: userId,
-      createdAt: now,
-      updatedAt: now,
-    });
+      displayName: profileData.displayName || "User",
+      createdAt: profileData.createdAt || now,
+      updatedAt: profileData.updatedAt || now,
+      lastActive: now,
+    };
+
+    // Add optional fields only if they have values
+    if (profileData.email) {
+      docData.email = profileData.email;
+    }
+
+    if (profileData.bio) {
+      docData.bio = profileData.bio;
+    }
+
+    if (profileData.age) {
+      docData.age = profileData.age;
+    }
+
+    if (profileData.photoUrl) {
+      docData.photoUrl = profileData.photoUrl;
+    }
+
+    if (profileData.avatar) {
+      docData.avatar = profileData.avatar;
+    }
+
+    if (profileData.profileComplete !== undefined) {
+      docData.profileComplete = profileData.profileComplete;
+    }
+
+    if (profileData.city) {
+      docData.city = profileData.city;
+    }
+
+    if (profileData.location) {
+      docData.latitude = profileData.location.latitude;
+      docData.longitude = profileData.location.longitude;
+    }
+
+    await databases.createDocument(
+      DATABASE_ID,
+      COLLECTIONS.USERS,
+      userId,
+      docData,
+      [
+        Permission.read(Role.any()), // Anyone can view profile
+        Permission.update(Role.user(userId)), // Only user can update
+        Permission.delete(Role.user(userId)), // Only user can delete
+      ]
+    );
   },
 
   async getProfile(userId: string): Promise<UserProfile | null> {
     try {
-      const document = await databases.getDocument(
+      const doc = await databases.getDocument(
         DATABASE_ID,
         COLLECTIONS.USERS,
         userId
       );
-      return document as unknown as UserProfile;
-    } catch (error: any) {
-      if (error.code === 404) {
-        return null;
+      const profile = doc as unknown as UserProfile;
+      if (doc.latitude && doc.longitude) {
+        profile.location = {
+          latitude: doc.latitude,
+          longitude: doc.longitude,
+        };
       }
-      throw error;
+      return profile;
+    } catch {
+      return null;
     }
   },
 
@@ -222,207 +102,526 @@ export const userService = {
     userId: string,
     updates: Partial<UserProfile>
   ): Promise<void> {
-    await databases.updateDocument(DATABASE_ID, COLLECTIONS.USERS, userId, {
-      ...updates,
-      updatedAt: new Date().toISOString(),
-    });
-  },
+    // Only include known safe fields to avoid schema mismatch errors
+    const updateData: Record<string, any> = {
+      lastActive: new Date().toISOString(),
+    };
 
-  async getSwipeCards(
-    currentUserId: string,
-    limitCount: number = 10
-  ): Promise<SwipeCard[]> {
-    // For demo mode, return mock swipe cards filtered by already swiped
-    try {
-      // Try to get real data from database
-      const userSwipes = await databases.listDocuments(
-        DATABASE_ID,
-        COLLECTIONS.SWIPES,
-        [Query.equal("userId", currentUserId)]
-      );
-      const dbSwipedUserIds = new Set(
-        userSwipes.documents.map((doc: any) => doc.targetUserId)
-      );
-
-      // Get potential matches (excluding self and already swiped)
-      const usersResponse = await databases.listDocuments(
-        DATABASE_ID,
-        COLLECTIONS.USERS,
-        [Query.notEqual("$id", currentUserId), Query.limit(limitCount * 2)]
-      );
-
-      const potentialMatches = usersResponse.documents
-        .map((doc: any) => ({ ...doc, id: doc.$id } as unknown as UserProfile))
-        .filter(
-          (user: UserProfile) =>
-            !dbSwipedUserIds.has(user.id) && user.id !== currentUserId
-        )
-        .slice(0, limitCount);
-
-      if (potentialMatches.length > 0) {
-        // Get current user's profile for compatibility calculation
-        const currentUser = await this.getProfile(currentUserId);
-        if (!currentUser)
-          return mockSwipeCards.filter(
-            (card) => !swipedUserIds.has(card.userId)
-          );
-
-        // Transform to SwipeCard format with compatibility
-        const cards: SwipeCard[] = await Promise.all(
-          potentialMatches.map(async (user: UserProfile) => {
-            const compatibility = await calculateCompatibility(
-              currentUser,
-              user
-            );
-            return {
-              userId: user.id,
-              displayName: user.displayName,
-              age: user.age,
-              pronouns: user.pronouns,
-              bio: user.bio,
-              city: user.city,
-              avatar: user.avatar,
-              compatibility,
-              sharedAttributes: [],
-            };
-          })
-        );
-        return cards;
-      }
-    } catch (error) {
-      console.log("Using mock swipe cards for demo");
-    }
-
-    // Return mock data filtered by swiped users
-    return mockSwipeCards
-      .filter((card) => !swipedUserIds.has(card.userId))
-      .slice(0, limitCount);
-  },
-
-  async recordSwipe(
-    userId: string,
-    targetUserId: string,
-    action: "like" | "pass"
-  ): Promise<boolean> {
-    // Track locally for demo mode
-    swipedUserIds.add(targetUserId);
-
-    try {
-      const swipeId = `${userId}_${targetUserId}`;
-      await databases.createDocument(DATABASE_ID, COLLECTIONS.SWIPES, swipeId, {
-        userId,
-        targetUserId,
-        action,
-        timestamp: new Date().toISOString(),
-      });
-
-      // Check for mutual like (match)
-      if (action === "like") {
-        try {
-          const mutualSwipe = await databases.getDocument(
-            DATABASE_ID,
-            COLLECTIONS.SWIPES,
-            `${targetUserId}_${userId}`
-          );
-          if (mutualSwipe && mutualSwipe.action === "like") {
-            // Create match
-            await this.createMatch(userId, targetUserId);
-            return true; // It's a match!
-          }
-        } catch (error: any) {
-          // No mutual swipe exists yet
-          if (error.code !== 404) {
-            throw error;
-          }
-        }
-      }
-    } catch (error) {
-      console.log("Using mock swipe recording for demo");
-      // For demo, randomly create a match (30% chance on like)
-      if (action === "like" && Math.random() < 0.3) {
-        return true; // Mock match!
-      }
-    }
-
-    return false;
-  },
-
-  async createMatch(userId1: string, userId2: string): Promise<void> {
-    const [user1, user2] = await Promise.all([
-      this.getProfile(userId1),
-      this.getProfile(userId2),
-    ]);
-
-    if (!user1 || !user2) return;
-
-    const matchId = [userId1, userId2].sort().join("_");
-    const compatibility = await calculateCompatibility(user1, user2);
-
-    await databases.createDocument(DATABASE_ID, COLLECTIONS.MATCHES, matchId, {
-      id: matchId,
-      userId1,
-      userId2,
-      user1Profile: JSON.stringify(user1),
-      user2Profile: JSON.stringify(user2),
-      compatibility,
-      createdAt: new Date().toISOString(),
-      sharedAttributes: JSON.stringify([]), // Calculate based on playlists
-    });
-  },
-
-  async getMatches(userId: string): Promise<Match[]> {
-    const [response1, response2] = await Promise.all([
-      databases.listDocuments(DATABASE_ID, COLLECTIONS.MATCHES, [
-        Query.equal("userId1", userId),
-      ]),
-      databases.listDocuments(DATABASE_ID, COLLECTIONS.MATCHES, [
-        Query.equal("userId2", userId),
-      ]),
-    ]);
-
-    const matches: Match[] = [
-      ...response1.documents.map(
-        (doc: any) =>
-          ({
-            ...doc,
-            user1Profile:
-              typeof doc.user1Profile === "string"
-                ? JSON.parse(doc.user1Profile)
-                : doc.user1Profile,
-            user2Profile:
-              typeof doc.user2Profile === "string"
-                ? JSON.parse(doc.user2Profile)
-                : doc.user2Profile,
-            sharedAttributes:
-              typeof doc.sharedAttributes === "string"
-                ? JSON.parse(doc.sharedAttributes)
-                : doc.sharedAttributes,
-          } as unknown as Match)
-      ),
-      ...response2.documents.map(
-        (doc: any) =>
-          ({
-            ...doc,
-            user1Profile:
-              typeof doc.user1Profile === "string"
-                ? JSON.parse(doc.user1Profile)
-                : doc.user1Profile,
-            user2Profile:
-              typeof doc.user2Profile === "string"
-                ? JSON.parse(doc.user2Profile)
-                : doc.user2Profile,
-            sharedAttributes:
-              typeof doc.sharedAttributes === "string"
-                ? JSON.parse(doc.sharedAttributes)
-                : doc.sharedAttributes,
-          } as unknown as Match)
-      ),
+    // Whitelist of fields that can be updated
+    const safeFields = [
+      "displayName",
+      "email",
+      "bio",
+      "age",
+      "city",
+      "avatar",
+      "photoUrl",
+      "pronouns",
+      "spotifyUserId",
+      "spotifyAccessToken",
+      "spotifyRefreshToken",
+      "topGenres",
+      "topArtists",
+      "isOnline",
+      "lastSeen",
+      "isTyping",
+      "lastTyping",
+      "pushToken",
+      "pushEnabled",
+      "unreadCount",
+      "matchCount",
+      "profileComplete",
+      "updatedAt",
+      "location",
+      "blockedUsers",
+      "isPremium",
+      "darkModeEnabled",
     ];
 
-    return matches.sort((a, b) => {
-      const timeA = a.lastMessageAt || a.createdAt;
-      const timeB = b.lastMessageAt || b.createdAt;
-      return new Date(timeB).getTime() - new Date(timeA).getTime();
-    });
+    for (const field of safeFields) {
+      if (field === "location" && updates.location) {
+        updateData.latitude = updates.location.latitude;
+        updateData.longitude = updates.location.longitude;
+        continue;
+      }
+      if (updates[field as keyof UserProfile] !== undefined) {
+        updateData[field] = updates[field as keyof UserProfile];
+      }
+    }
+
+    await databases.updateDocument(
+      DATABASE_ID,
+      COLLECTIONS.USERS,
+      userId,
+      updateData
+    );
+  },
+
+  // ==================== SAFETY & MODERATION ====================
+  async updateLocation(
+    userId: string,
+    location: { latitude: number; longitude: number }
+  ): Promise<void> {
+    await this.updateProfile(userId, { location });
+  },
+
+  async blockUser(currentUserId: string, blockedUserId: string): Promise<void> {
+    const currentUser = await this.getProfile(currentUserId);
+    const blockedUsers = currentUser?.blockedUsers || [];
+    if (!blockedUsers.includes(blockedUserId)) {
+      blockedUsers.push(blockedUserId);
+      await this.updateProfile(currentUserId, { blockedUsers });
+    }
+  },
+
+  async reportUser(
+    reporterId: string,
+    reportedId: string,
+    reason: string
+  ): Promise<void> {
+    // In a real app, this would create a document in a 'reports' collection
+    // For now, we'll just log it and block the user
+    console.log(`User ${reporterId} reported ${reportedId} for: ${reason}`);
+    await this.blockUser(reporterId, reportedId);
+  },
+
+  async unmatch(matchId: string): Promise<void> {
+    await databases.deleteDocument(DATABASE_ID, COLLECTIONS.MATCHES, matchId);
+  },
+
+  async getReceivedLikes(userId: string): Promise<SwipeCard[]> {
+    try {
+      // 1. Get swipes where swipedId == userId AND direction == 'right'
+      const receivedSwipes = await databases.listDocuments(
+        DATABASE_ID,
+        COLLECTIONS.SWIPES,
+        [
+          Query.equal("swipedId", userId),
+          Query.equal("direction", ["right", "superlike"]),
+          Query.limit(100),
+          Query.orderDesc("createdAt"),
+        ]
+      );
+
+      if (receivedSwipes.total === 0) return [];
+
+      // 2. Get swipes where swiperId == userId (users I have already swiped on)
+      const mySwipes = await databases.listDocuments(
+        DATABASE_ID,
+        COLLECTIONS.SWIPES,
+        [Query.equal("swiperId", userId), Query.limit(1000)]
+      );
+
+      const mySwipedIds = new Set(
+        mySwipes.documents.map((doc: any) => doc.swipedId)
+      );
+
+      // 3. Filter out users I've already swiped on
+      // We only want to show users who liked me, but I haven't acted on yet
+      const potentialMatchIds = [
+        ...new Set(
+          receivedSwipes.documents
+            .map((doc: any) => doc.swiperId)
+            .filter((id: string) => !mySwipedIds.has(id))
+        ),
+      ];
+
+      if (potentialMatchIds.length === 0) return [];
+
+      // 4. Fetch profiles for these users
+      const profiles = await Promise.all(
+        potentialMatchIds.map(async (id) => {
+          try {
+            return await this.getProfile(id);
+          } catch (e) {
+            return null;
+          }
+        })
+      );
+
+      // 5. Convert to SwipeCard format
+      return profiles
+        .filter((p): p is UserProfile => p !== null)
+        .map((p) => ({
+          userId: p.id,
+          displayName: p.displayName,
+          age: p.age,
+          pronouns: p.pronouns,
+          bio: p.bio,
+          city: p.city,
+          avatar: p.photoUrl || p.avatar,
+          topGenres: p.topGenres,
+          topArtists: p.topArtists,
+        }));
+    } catch (error) {
+      console.error("Error fetching received likes:", error);
+      return [];
+    }
+  },
+
+  // ==================== SWIPE MANAGEMENT ====================
+  async recordSwipe(swipe: SwipeAction): Promise<void> {
+    await databases.createDocument(
+      DATABASE_ID,
+      COLLECTIONS.SWIPES,
+      ID.unique(),
+      {
+        swiperId: swipe.swiperId,
+        swipedId: swipe.swipedId,
+        direction: swipe.direction,
+        createdAt: new Date().toISOString(),
+      }
+    );
+  },
+
+  async checkForMatch(userId1: string, userId2: string): Promise<boolean> {
+    try {
+      // Check if both users swiped right on each other
+      const swipes = await databases.listDocuments(
+        DATABASE_ID,
+        COLLECTIONS.SWIPES,
+        [
+          Query.equal("swiperId", userId2),
+          Query.equal("swipedId", userId1),
+          Query.equal("direction", "right"),
+        ]
+      );
+      return swipes.total > 0;
+    } catch {
+      return false;
+    }
+  },
+
+  async createMatch(
+    userId1: string,
+    userId2: string,
+    compatibilityScore: number
+  ): Promise<string> {
+    try {
+      // Get both user profiles
+      const [user1, user2] = await Promise.all([
+        this.getProfile(userId1),
+        this.getProfile(userId2),
+      ]);
+
+      if (!user1 || !user2) {
+        throw new Error("User profiles not found");
+      }
+
+      // Calculate detailed compatibility with shared data
+      const genreResult = matchingService.calculateGenreMatch(
+        user1.topGenres || [],
+        user2.topGenres || []
+      );
+
+      const artistResult = matchingService.calculateArtistOverlap(
+        user1.topArtists || [],
+        user2.topArtists || []
+      );
+
+      const matchId = ID.unique();
+      await databases.createDocument(
+        DATABASE_ID,
+        COLLECTIONS.MATCHES,
+        matchId,
+        {
+          user1Id: userId1,
+          user2Id: userId2,
+          compatibilityScore,
+          sharedGenres: genreResult.shared,
+          sharedArtists: artistResult.shared,
+          createdAt: new Date().toISOString(),
+        }
+      );
+
+      console.log(
+        `✅ Match created: ${matchId} with ${compatibilityScore}% compatibility`
+      );
+      return matchId;
+    } catch (error) {
+      console.error("Error creating match:", error);
+      // Fallback to basic match creation
+      const matchId = ID.unique();
+      await databases.createDocument(
+        DATABASE_ID,
+        COLLECTIONS.MATCHES,
+        matchId,
+        {
+          user1Id: userId1,
+          user2Id: userId2,
+          compatibilityScore,
+          createdAt: new Date().toISOString(),
+        }
+      );
+      return matchId;
+    }
+  },
+
+  // ==================== DISCOVERY ====================
+  async getSwipeCards(currentUserId: string): Promise<SwipeCard[]> {
+    try {
+      // Get current user's profile for matching
+      const currentUser = await this.getProfile(currentUserId);
+      if (!currentUser) {
+        return [];
+      }
+
+      // Get all users except current user
+      const users = await databases.listDocuments(
+        DATABASE_ID,
+        COLLECTIONS.USERS,
+        [Query.notEqual("$id", currentUserId), Query.limit(100)]
+      );
+
+      // Get users already swiped by current user
+      const swipes = await databases.listDocuments(
+        DATABASE_ID,
+        COLLECTIONS.SWIPES,
+        [Query.equal("swiperId", currentUserId)]
+      );
+
+      const swipedIds = new Set(
+        swipes.documents.map((doc: any) => doc.swipedId)
+      );
+
+      // Add blocked users to filtered list
+      const blockedUsers = new Set(currentUser.blockedUsers || []);
+
+      // Helper for distance calculation
+      const calculateDistance = (
+        lat1: number,
+        lon1: number,
+        lat2: number,
+        lon2: number
+      ) => {
+        const R = 6371; // Radius of the earth in km
+        const dLat = (lat2 - lat1) * (Math.PI / 180);
+        const dLon = (lon2 - lon1) * (Math.PI / 180);
+        const a =
+          Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos(lat1 * (Math.PI / 180)) *
+            Math.cos(lat2 * (Math.PI / 180)) *
+            Math.sin(dLon / 2) *
+            Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+      };
+
+      // Filter out already swiped users, blocked users, and check distance
+      const swipeCards: SwipeCard[] = await Promise.all(
+        users.documents
+          .filter((doc: any) => {
+            // Filter swiped and blocked
+            if (swipedIds.has(doc.$id) || blockedUsers.has(doc.$id))
+              return false;
+
+            // Filter by distance
+            if (currentUser.location && doc.location) {
+              const distance = calculateDistance(
+                currentUser.location.latitude,
+                currentUser.location.longitude,
+                doc.location.latitude,
+                doc.location.longitude
+              );
+
+              // Premium users get 100km radius, Free users get 4km
+              const maxDistance = currentUser.isPremium ? 100 : 4;
+
+              if (distance > maxDistance) return false;
+            }
+            return true;
+          })
+          .map(async (doc: any) => {
+            const potentialMatch: UserProfile = {
+              id: doc.$id,
+              displayName: doc.displayName || "Anonymous",
+              age: doc.age,
+              pronouns: doc.pronouns,
+              bio: doc.bio || "",
+              city: doc.city || "",
+              avatar: doc.avatar || "",
+              topGenres: doc.topGenres || [],
+              topArtists: doc.topArtists || [],
+            };
+
+            // Calculate compatibility score using matching algorithm
+            const compatibilityScore =
+              matchingService.calculateQuickCompatibility(
+                currentUser,
+                potentialMatch
+              );
+
+            // Find shared genres and artists
+            const sharedGenres =
+              currentUser.topGenres?.filter((g) =>
+                potentialMatch.topGenres?.some(
+                  (g2) => g.toLowerCase() === g2.toLowerCase()
+                )
+              ) || [];
+
+            const sharedArtists =
+              currentUser.topArtists?.filter((a) =>
+                potentialMatch.topArtists?.some(
+                  (a2) => a.toLowerCase() === a2.toLowerCase()
+                )
+              ) || [];
+
+            return {
+              userId: doc.$id,
+              displayName: potentialMatch.displayName,
+              age: potentialMatch.age,
+              pronouns: potentialMatch.pronouns,
+              bio: potentialMatch.bio,
+              city: potentialMatch.city,
+              avatar: potentialMatch.avatar,
+              compatibility: compatibilityScore,
+              sharedGenres,
+              sharedArtists,
+              topGenres: potentialMatch.topGenres || [],
+              topArtists: potentialMatch.topArtists || [],
+            };
+          })
+      );
+
+      // Sort by compatibility score (highest first)
+      return swipeCards.sort(
+        (a, b) => (b.compatibility || 0) - (a.compatibility || 0)
+      );
+    } catch (error) {
+      console.error("Error fetching swipe cards:", error);
+      return [];
+    }
+  },
+
+  async markAsSwiped(userId: string): Promise<void> {
+    // This is now handled by recordSwipe
+  },
+
+  // ==================== MATCHES ====================
+  async getMatches(userId: string): Promise<Match[]> {
+    try {
+      const matchDocs = await databases.listDocuments(
+        DATABASE_ID,
+        COLLECTIONS.MATCHES,
+        [
+          Query.or([
+            Query.equal("user1Id", userId),
+            Query.equal("user2Id", userId),
+          ]),
+          Query.orderDesc("createdAt"),
+        ]
+      );
+
+      // Fetch user profiles for each match
+      const matchesWithProfiles = await Promise.all(
+        matchDocs.documents.map(async (doc: any) => {
+          const otherUserId =
+            doc.user1Id === userId ? doc.user2Id : doc.user1Id;
+          const otherUserProfile = await this.getProfile(otherUserId);
+
+          return {
+            id: doc.$id,
+            userId1: doc.user1Id,
+            userId2: doc.user2Id,
+            user1Profile: doc.user1Id === userId ? null : otherUserProfile,
+            user2Profile: doc.user2Id === userId ? otherUserProfile : null,
+            compatibility: doc.compatibilityScore || 0,
+            sharedAttributes: doc.sharedGenres || [],
+            sharedGenres: doc.sharedGenres || [],
+            sharedArtists: doc.sharedArtists || [],
+            createdAt: doc.createdAt,
+            lastMessage: undefined, // Will be populated from messages if needed
+            lastMessageTime: undefined,
+            unreadCount: 0,
+            isOnline: false, // Can be enhanced with real-time status
+            sharedSongs: 0, // Can be calculated from Spotify data
+          } as Match;
+        })
+      );
+
+      return matchesWithProfiles;
+    } catch (error) {
+      console.error("Error fetching matches:", error);
+      return [];
+    }
+  },
+
+  async getMatchById(matchId: string): Promise<Match | null> {
+    try {
+      const match = await databases.getDocument(
+        DATABASE_ID,
+        COLLECTIONS.MATCHES,
+        matchId
+      );
+      return match as unknown as Match;
+    } catch {
+      return null;
+    }
+  },
+
+  // ==================== IMAGE UPLOAD ====================
+  async uploadAvatar(userId: string, imageUri: string): Promise<string> {
+    try {
+      console.log("[UserService] Starting avatar upload for user:", userId);
+      console.log("[UserService] Image URI:", imageUri);
+      console.log("[UserService] Storage Bucket ID:", STORAGE_BUCKET_ID);
+
+      // Generate unique file ID
+      const fileId = ID.unique();
+      const fileName = `avatar_${userId}_${Date.now()}.jpg`;
+
+      // For React Native, we need to create a proper file object
+      // The URI from expo-image-picker is a local file path
+      const file = {
+        uri: imageUri,
+        name: fileName,
+        type: "image/jpeg",
+      };
+
+      console.log("[UserService] Uploading file:", file);
+
+      // Upload to Appwrite Storage
+      const uploadedFile = await storage.createFile(
+        STORAGE_BUCKET_ID,
+        fileId,
+        file as any
+      );
+
+      console.log(
+        "[UserService] File uploaded successfully:",
+        uploadedFile.$id
+      );
+
+      // Get the file URL - use getFileView for public access
+      const fileUrl = storage
+        .getFileView(STORAGE_BUCKET_ID, uploadedFile.$id)
+        .toString();
+
+      console.log("[UserService] File URL:", fileUrl);
+
+      // Update user profile with new avatar URL
+      await this.updateProfile(userId, { avatar: fileUrl });
+
+      console.log("[UserService] Profile updated with new avatar");
+
+      return fileUrl;
+    } catch (error: any) {
+      console.error("[UserService] Error uploading avatar:", error);
+      console.error(
+        "[UserService] Error details:",
+        JSON.stringify(error, null, 2)
+      );
+      throw error;
+    }
+  },
+
+  async deleteAvatar(fileId: string): Promise<void> {
+    try {
+      await storage.deleteFile(STORAGE_BUCKET_ID, fileId);
+    } catch (error) {
+      console.error("Error deleting avatar:", error);
+    }
   },
 };
+
+export default userService;

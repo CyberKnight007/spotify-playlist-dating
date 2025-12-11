@@ -1,4 +1,6 @@
-import { SpotifyPlaylist, SpotifyTrack } from "./spotify";
+// ============================================
+// USER TYPES
+// ============================================
 
 export interface UserProfile {
   id: string;
@@ -9,40 +11,35 @@ export interface UserProfile {
   age?: number;
   city?: string;
   avatar?: string;
+  photoUrl?: string; // Primary profile photo (for new setup flow)
+  profileComplete?: boolean; // Whether profile setup is complete
   createdAt?: string;
   updatedAt?: string;
-  activePlaylistId?: string;
+  lastActive?: string;
   spotifyAccessToken?: string;
   spotifyRefreshToken?: string;
   spotifyUserId?: string;
   topGenres?: string[];
   topArtists?: string[];
+  location?: {
+    latitude: number;
+    longitude: number;
+  };
+  blockedUsers?: string[];
+  isPremium?: boolean;
+  pushEnabled?: boolean;
+  darkModeEnabled?: boolean;
 }
+
+// ============================================
+// SWIPE TYPES
+// ============================================
 
 export interface SwipeAction {
-  userId: string;
-  targetUserId: string;
-  action: "like" | "pass";
-  timestamp: string;
-}
-
-export interface Match {
-  id: string;
-  userId1: string;
-  userId2: string;
-  createdAt: string;
-  lastMessageAt?: string;
-  user1Profile: UserProfile;
-  user2Profile: UserProfile;
-  compatibility: number;
-  sharedAttributes: string[];
-  // Enhanced fields for demo/UI
-  lastMessage?: string;
-  lastMessageTime?: string;
-  unreadCount?: number;
-  isOnline?: boolean;
-  sharedPlaylist?: string;
-  sharedSongs?: number;
+  swiperId: string;
+  swipedId: string;
+  direction: "left" | "right" | "superlike";
+  createdAt?: string;
 }
 
 export interface SwipeCard {
@@ -53,8 +50,71 @@ export interface SwipeCard {
   bio?: string;
   city?: string;
   avatar?: string;
-  activePlaylist?: SpotifyPlaylist;
-  anthem?: SpotifyTrack;
   compatibility?: number;
+  sharedGenres?: string[];
+  sharedArtists?: string[];
+  topGenres?: string[];
+  topArtists?: string[];
+  audioProfile?: {
+    dominantMood?: string;
+    listeningStyle?: string;
+  };
+}
+
+// ============================================
+// MATCH TYPES
+// ============================================
+
+export interface Match {
+  id: string;
+  // Support both naming conventions - make one or the other required via union
+  user1Id?: string;
+  user2Id?: string;
+  userId1?: string;
+  userId2?: string;
+  user1Profile?: UserProfile;
+  user2Profile?: UserProfile;
+  compatibilityScore?: number;
+  compatibility?: number;
+  sharedArtists?: string[];
+  sharedGenres?: string[];
   sharedAttributes?: string[];
+  createdAt: string;
+  lastMessageAt?: string;
+  // UI-specific fields
+  lastMessage?: string;
+  lastMessageTime?: string;
+  unreadCount?: number;
+  isOnline?: boolean;
+  sharedPlaylist?: string;
+  sharedSongs?: number;
+}
+
+// ============================================
+// MESSAGE TYPES
+// ============================================
+
+export interface Message {
+  id: string;
+  matchId: string;
+  senderId: string;
+  receiverId: string;
+  type: "text" | "song" | "playlist" | "voice" | "image";
+  content: string;
+  songData?: {
+    id: string;
+    name: string;
+    artist: string;
+    albumArt?: string;
+    previewUrl?: string;
+  };
+  read: boolean;
+  createdAt: string;
+}
+
+export interface Conversation {
+  matchId: string;
+  otherUser: UserProfile;
+  lastMessage?: Message;
+  unreadCount: number;
 }

@@ -1,5 +1,12 @@
 import React, { useEffect } from "react";
-import { View, Text, TextInput, Pressable, Dimensions } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  Pressable,
+  Dimensions,
+  Alert,
+} from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -16,6 +23,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { AnimatedButton } from "../components/ui/AnimatedComponents";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const { width, height } = Dimensions.get("window");
 
@@ -25,7 +33,9 @@ const LoginScreen = ({ navigation }: any) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const { signIn } = useAuth();
+  const [spotifyLoading, setSpotifyLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const { signIn, signInWithSpotify, signInWithGoogle } = useAuth();
 
   // Animation values
   const logoScale = useSharedValue(0);
@@ -110,6 +120,40 @@ const LoginScreen = ({ navigation }: any) => {
     }
   };
 
+  const handleSpotifyLogin = async () => {
+    setSpotifyLoading(true);
+    setError("");
+    try {
+      await signInWithSpotify();
+    } catch (err: any) {
+      console.error("Spotify login error:", err);
+      setError(err.message || "Failed to sign in with Spotify");
+      Alert.alert(
+        "Spotify Login Error",
+        err.message || "Failed to sign in with Spotify. Please try again."
+      );
+    } finally {
+      setSpotifyLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setGoogleLoading(true);
+    setError("");
+    try {
+      await signInWithGoogle();
+    } catch (err: any) {
+      console.error("Google login error:", err);
+      setError(err.message || "Failed to sign in with Google");
+      Alert.alert(
+        "Google Login Error",
+        err.message || "Failed to sign in with Google. Please try again."
+      );
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
   return (
     <View className="flex-1 bg-dark-950">
       {/* Animated Background Orbs */}
@@ -141,7 +185,7 @@ const LoginScreen = ({ navigation }: any) => {
             entering={FadeInUp.delay(200).duration(600)}
             className="text-4xl font-bold text-white mt-6 tracking-tight"
           >
-            Playlist Match
+            BeatBond
           </Animated.Text>
           <Animated.Text
             entering={FadeInUp.delay(400).duration(600)}
@@ -229,13 +273,37 @@ const LoginScreen = ({ navigation }: any) => {
 
             {/* Social Buttons */}
             <View className="flex-row gap-4">
-              <Pressable className="flex-1 flex-row items-center justify-center bg-primary-500 py-4 rounded-2xl">
-                <Ionicons name="musical-notes" size={24} color="#000" />
-                <Text className="text-dark-950 font-bold ml-2">Spotify</Text>
+              <Pressable
+                onPress={handleSpotifyLogin}
+                disabled={spotifyLoading}
+                className="flex-1 flex-row items-center justify-center bg-primary-500 py-4 rounded-2xl"
+                style={{ opacity: spotifyLoading ? 0.7 : 1 }}
+              >
+                {spotifyLoading ? (
+                  <Text className="text-dark-950 font-bold">Loading...</Text>
+                ) : (
+                  <>
+                    <Ionicons name="musical-notes" size={24} color="#000" />
+                    <Text className="text-dark-950 font-bold ml-2">
+                      Spotify
+                    </Text>
+                  </>
+                )}
               </Pressable>
-              <Pressable className="flex-1 flex-row items-center justify-center bg-white/10 py-4 rounded-2xl border border-white/10">
-                <Ionicons name="logo-google" size={24} color="#fff" />
-                <Text className="text-white font-bold ml-2">Google</Text>
+              <Pressable
+                onPress={handleGoogleLogin}
+                disabled={googleLoading}
+                className="flex-1 flex-row items-center justify-center bg-white/10 py-4 rounded-2xl border border-white/10"
+                style={{ opacity: googleLoading ? 0.7 : 1 }}
+              >
+                {googleLoading ? (
+                  <Text className="text-white font-bold">Loading...</Text>
+                ) : (
+                  <>
+                    <Ionicons name="logo-google" size={24} color="#fff" />
+                    <Text className="text-white font-bold ml-2">Google</Text>
+                  </>
+                )}
               </Pressable>
             </View>
           </View>
@@ -248,6 +316,19 @@ const LoginScreen = ({ navigation }: any) => {
             <Text className="text-dark-400 text-center">
               Don't have an account?{" "}
               <Text className="text-primary-500 font-semibold">Sign Up</Text>
+            </Text>
+          </Pressable>
+
+          {/* Reset Onboarding - For Testing */}
+          <Pressable
+            onPress={async () => {
+              await AsyncStorage.removeItem("@onboarding_complete");
+              navigation.replace("WelcomeOnboarding");
+            }}
+            className="mt-2 py-2"
+          >
+            <Text className="text-dark-500 text-center text-xs">
+              View Onboarding Again
             </Text>
           </Pressable>
         </Animated.View>

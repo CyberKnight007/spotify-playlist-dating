@@ -7,6 +7,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Alert,
 } from "react-native";
 import Animated, {
   useSharedValue,
@@ -31,8 +32,9 @@ const SignUpScreen = ({ navigation }: any) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [spotifyLoading, setSpotifyLoading] = useState(false);
   const [step, setStep] = useState(1);
-  const { signUp } = useAuth();
+  const { signUp, signInWithSpotify } = useAuth();
 
   // Animation values
   const formOpacity = useSharedValue(0);
@@ -104,6 +106,23 @@ const SignUpScreen = ({ navigation }: any) => {
       setError(err.message || "Failed to create account");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSpotifySignUp = async () => {
+    setSpotifyLoading(true);
+    setError("");
+    try {
+      await signInWithSpotify();
+    } catch (err: any) {
+      console.error("Spotify signup error:", err);
+      setError(err.message || "Failed to sign up with Spotify");
+      Alert.alert(
+        "Spotify Sign Up Error",
+        err.message || "Failed to sign up with Spotify. Please try again."
+      );
+    } finally {
+      setSpotifyLoading(false);
     }
   };
 
@@ -310,10 +329,44 @@ const SignUpScreen = ({ navigation }: any) => {
                 />
 
                 {step === 2 && (
-                  <Text className="text-dark-400 text-xs text-center mt-4 px-4">
-                    By signing up, you agree to our Terms of Service and Privacy
-                    Policy
-                  </Text>
+                  <>
+                    <View className="flex-row items-center my-4">
+                      <View className="flex-1 h-px bg-white/10" />
+                      <Text className="text-dark-400 mx-4 text-sm">
+                        or sign up with
+                      </Text>
+                      <View className="flex-1 h-px bg-white/10" />
+                    </View>
+
+                    <Pressable
+                      onPress={handleSpotifySignUp}
+                      disabled={spotifyLoading}
+                      className="flex-row items-center justify-center bg-primary-500 py-4 rounded-2xl"
+                      style={{ opacity: spotifyLoading ? 0.7 : 1 }}
+                    >
+                      {spotifyLoading ? (
+                        <Text className="text-dark-950 font-bold">
+                          Loading...
+                        </Text>
+                      ) : (
+                        <>
+                          <Ionicons
+                            name="musical-notes"
+                            size={24}
+                            color="#000"
+                          />
+                          <Text className="text-dark-950 font-bold ml-2">
+                            Continue with Spotify
+                          </Text>
+                        </>
+                      )}
+                    </Pressable>
+
+                    <Text className="text-dark-400 text-xs text-center mt-4 px-4">
+                      By signing up, you agree to our Terms of Service and
+                      Privacy Policy
+                    </Text>
+                  </>
                 )}
               </View>
 
