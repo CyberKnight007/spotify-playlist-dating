@@ -1,0 +1,48 @@
+{
+  "projectId": "692c0bae0033b9e34774",
+  "projectName": "BeatBond",
+  "functions": [
+    {
+      "$id": "match-notification",
+      "name": "match-notification",
+      "runtime": "node-18.0",
+      "path": "functions/match-notification",
+      "entrypoint": "src/main.js",
+      "ignore": ["node_modules", ".gitignore", "package-lock.json"],
+      "execute": [],
+      "events": [
+        "databases.6933e7230002691f918d.collections.matches.documents.*.create"
+      ],
+      "schedule": "",
+      "timeout": 15
+    },
+    {
+      "$id": "message-delivery-status",
+      "name": "message-delivery-status",
+      "runtime": "node-18.0",
+      "path": "functions/message-delivery-status",
+      "entrypoint": "src/main.js",
+      "ignore": ["node_modules", ".gitignore", "package-lock.json"],
+      "execute": [],
+      "events": [
+        "databases.6933e7230002691f918d.collections.messages.documents.*.create"
+      ],
+      "schedule": "",
+      "timeout": 15
+    },
+    {
+      "$id": "send-push-notification",
+      "name": "send-push-notification",
+      "runtime": "node-18.0",
+      "path": "functions/send-push-notification",
+      "entrypoint": "src/main.js",
+      "ignore": ["node_modules", ".gitignore", "package-lock.json"],
+      "execute": [],
+      "events": [
+        "databases.6933e7230002691f918d.collections.messages.documents.*.create"
+      ],
+      "schedule": "",
+      "timeout": 15
+    }
+  ]
+}

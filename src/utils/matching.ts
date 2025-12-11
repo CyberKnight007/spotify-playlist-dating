@@ -1,80 +1,239 @@
-import { UserProfile } from '../types/user';
-import { SpotifyPlaylist } from '../types/spotify';
+import { UserProfile } from "../types/user";
 
+// ============================================
+// COMPATIBILITY CALCULATION
+// ============================================
+
+export interface CompatibilityFactors {
+  genreScore: number;
+  artistScore: number;
+  ageScore: number;
+  locationScore: number;
+  bioScore: number;
+}
+
+export interface CompatibilityResult {
+  score: number;
+  factors: CompatibilityFactors;
+  sharedGenres: string[];
+  sharedArtists: string[];
+  insights: string[];
+}
+
+/**
+ * Calculate compatibility between two users based on their profiles
+ */
 export async function calculateCompatibility(
   user1: UserProfile,
   user2: UserProfile
-): Promise<number> {
-  let score = 0;
-  let factors = 0;
+): Promise<CompatibilityResult> {
+  const factors: CompatibilityFactors = {
+    genreScore: 0,
+    artistScore: 0,
+    ageScore: 0,
+    locationScore: 0,
+    bioScore: 0,
+  };
 
-  // Age compatibility (if both have age)
+  const sharedGenres: string[] = [];
+  const sharedArtists: string[] = [];
+  const insights: string[] = [];
+
+  // 1. Genre matching (40% weight)
+  if (user1.topGenres && user2.topGenres) {
+    const genres1 = new Set(user1.topGenres.map((g) => g.toLowerCase()));
+    const genres2 = user2.topGenres.map((g) => g.toLowerCase());
+
+    for (const genre of genres2) {
+      if (genres1.has(genre)) {
+        sharedGenres.push(genre);
+      }
+    }
+
+    factors.genreScore = Math.min(sharedGenres.length * 10, 100);
+
+    if (sharedGenres.length >= 3) {
+      insights.push(`🎵 You both love ${sharedGenres.slice(0, 3).join(", ")}!`);
+    }
+  }
+
+  // 2. Artist matching (30% weight)
+  if (user1.topArtists && user2.topArtists) {
+    const artists1 = new Set(user1.topArtists.map((a) => a.toLowerCase()));
+    const artists2 = user2.topArtists.map((a) => a.toLowerCase());
+
+    for (const artist of artists2) {
+      if (artists1.has(artist)) {
+        sharedArtists.push(artist);
+      }
+    }
+
+    factors.artistScore = Math.min(sharedArtists.length * 15, 100);
+
+    if (sharedArtists.length > 0) {
+      insights.push(`🎤 You both listen to ${sharedArtists[0]}!`);
+    }
+  }
+
+  // 3. Age compatibility (10% weight)
   if (user1.age && user2.age) {
     const ageDiff = Math.abs(user1.age - user2.age);
-    const ageScore = Math.max(0, 100 - ageDiff * 2);
-    score += ageScore;
-    factors++;
+    factors.ageScore = Math.max(0, 100 - ageDiff * 5);
+
+    if (ageDiff <= 3) {
+      insights.push("📅 You're close in age!");
+    }
   }
 
-  // Location compatibility
+  // 4. Location compatibility (10% weight)
   if (user1.city && user2.city) {
     if (user1.city.toLowerCase() === user2.city.toLowerCase()) {
-      score += 100;
+      factors.locationScore = 100;
+      insights.push(`📍 Both in ${user1.city}!`);
     } else {
-      score += 50; // Same country/region could be added
+      factors.locationScore = 30;
     }
-    factors++;
   }
 
-  // Playlist compatibility (if both have active playlists)
-  // This would require fetching playlist data and comparing audio features
-  // For now, we'll use a base score
-  if (user1.activePlaylistId && user2.activePlaylistId) {
-    score += 70; // Base playlist compatibility
-    factors++;
-  }
-
-  // Bio/keyword matching (simple version)
+  // 5. Bio keyword matching (10% weight)
   if (user1.bio && user2.bio) {
-    const bio1Words = user1.bio.toLowerCase().split(/\s+/);
-    const bio2Words = user2.bio.toLowerCase().split(/\s+/);
-    const commonWords = bio1Words.filter(word => bio2Words.includes(word) && word.length > 3);
-    if (commonWords.length > 0) {
-      score += Math.min(30, commonWords.length * 10);
-      factors++;
+    const commonKeywords = findCommonKeywords(user1.bio, user2.bio);
+    factors.bioScore = Math.min(commonKeywords.length * 20, 100);
+
+    if (commonKeywords.length > 0) {
+      insights.push(`✨ Similar vibes in your bios!`);
     }
   }
 
-  // Calculate average
-  return factors > 0 ? Math.round(score / factors) : 50;
+  // Calculate weighted total
+  const totalScore = Math.round(
+    factors.genreScore * 0.4 +
+      factors.artistScore * 0.3 +
+      factors.ageScore * 0.1 +
+      factors.locationScore * 0.1 +
+      factors.bioScore * 0.1
+  );
+
+  return {
+    score: totalScore,
+    factors,
+    sharedGenres,
+    sharedArtists,
+    insights: insights.slice(0, 3),
+  };
 }
 
-export function getSharedAttributes(
-  playlist1?: SpotifyPlaylist,
-  playlist2?: SpotifyPlaylist
+/**
+ * Find common meaningful keywords between two bios
+ */
+function findCommonKeywords(bio1: string, bio2: string): string[] {
+  const stopWords = new Set([
+    "the",
+    "a",
+    "an",
+    "and",
+    "or",
+    "but",
+    "is",
+    "are",
+    "was",
+    "were",
+    "be",
+    "been",
+    "being",
+    "have",
+    "has",
+    "had",
+    "do",
+    "does",
+    "did",
+    "will",
+    "would",
+    "could",
+    "should",
+    "may",
+    "might",
+    "must",
+    "shall",
+    "can",
+    "need",
+    "to",
+    "of",
+    "in",
+    "for",
+    "on",
+    "with",
+    "at",
+    "by",
+    "from",
+    "up",
+    "about",
+    "into",
+    "over",
+    "after",
+    "i",
+    "me",
+    "my",
+    "you",
+    "your",
+    "we",
+    "our",
+    "they",
+    "their",
+    "it",
+    "its",
+  ]);
+
+  const words1 = bio1
+    .toLowerCase()
+    .replace(/[^\w\s]/g, "")
+    .split(/\s+/)
+    .filter((w) => w.length > 3 && !stopWords.has(w));
+
+  const words2Set = new Set(
+    bio2
+      .toLowerCase()
+      .replace(/[^\w\s]/g, "")
+      .split(/\s+/)
+      .filter((w) => w.length > 3 && !stopWords.has(w))
+  );
+
+  return words1.filter((w) => words2Set.has(w));
+}
+
+/**
+ * Get matching insights between two users
+ */
+export function getMatchInsights(
+  user1: UserProfile,
+  user2: UserProfile
 ): string[] {
-  const attributes: string[] = [];
+  const insights: string[] = [];
 
-  if (!playlist1 || !playlist2) return attributes;
-
-  // Shared tags
-  const sharedTags = playlist1.tags.filter(tag => playlist2.tags.includes(tag));
-  attributes.push(...sharedTags.map(tag => `Both love ${tag}`));
-
-  // Similar energy levels
-  const energy1 = playlist1.moodVector.energy;
-  const energy2 = playlist2.moodVector.energy;
-  if (Math.abs(energy1 - energy2) < 0.2) {
-    attributes.push('Similar energy vibes');
+  // Check for shared genres
+  if (user1.topGenres && user2.topGenres) {
+    const sharedGenres = user1.topGenres.filter((g) =>
+      user2.topGenres?.some((g2) => g.toLowerCase() === g2.toLowerCase())
+    );
+    if (sharedGenres.length > 0) {
+      insights.push(`Both into ${sharedGenres[0]}`);
+    }
   }
 
-  // Similar danceability
-  const dance1 = playlist1.moodVector.danceability;
-  const dance2 = playlist2.moodVector.danceability;
-  if (Math.abs(dance1 - dance2) < 0.2) {
-    attributes.push('Matching dance vibes');
+  // Check for shared artists
+  if (user1.topArtists && user2.topArtists) {
+    const sharedArtists = user1.topArtists.filter((a) =>
+      user2.topArtists?.some((a2) => a.toLowerCase() === a2.toLowerCase())
+    );
+    if (sharedArtists.length > 0) {
+      insights.push(`Both fans of ${sharedArtists[0]}`);
+    }
   }
 
-  return attributes;
+  // Location insight
+  if (user1.city && user2.city && user1.city === user2.city) {
+    insights.push(`Both in ${user1.city}`);
+  }
+
+  return insights;
 }
-

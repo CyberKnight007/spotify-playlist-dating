@@ -1,0 +1,233 @@
+{
+  "projectId": "692c0bae0033b9e34774",
+  "databaseId": "692c0ca50004e722f8e8",
+  "collections": [
+    {
+      "collectionId": "users",
+      "name": "Users",
+      "permissions": [
+        "read(\"any\")",
+        "create(\"users\")",
+        "update(\"users\")",
+        "delete(\"users\")"
+      ],
+      "documentSecurity": true,
+      "attributes": [
+        { "key": "email", "type": "string", "size": 255, "required": false },
+        {
+          "key": "displayName",
+          "type": "string",
+          "size": 255,
+          "required": true
+        },
+        { "key": "bio", "type": "string", "size": 1000, "required": false },
+        { "key": "pronouns", "type": "string", "size": 50, "required": false },
+        {
+          "key": "age",
+          "type": "integer",
+          "required": false,
+          "min": 18,
+          "max": 120
+        },
+        { "key": "city", "type": "string", "size": 255, "required": false },
+        { "key": "latitude", "type": "double", "required": false },
+        { "key": "longitude", "type": "double", "required": false },
+        { "key": "photoUrl", "type": "url", "required": false },
+        { "key": "profileComplete", "type": "boolean", "required": false },
+        { "key": "isPremium", "type": "boolean", "required": false },
+        { "key": "darkModeEnabled", "type": "boolean", "required": false },
+        {
+          "key": "blockedUsers",
+          "type": "string",
+          "size": 255,
+          "required": false,
+          "array": true
+        },
+        { "key": "avatar", "type": "url", "required": false },
+        { "key": "createdAt", "type": "datetime", "required": false },
+        { "key": "updatedAt", "type": "datetime", "required": false },
+        { "key": "lastActive", "type": "datetime", "required": false },
+        {
+          "key": "spotifyUserId",
+          "type": "string",
+          "size": 255,
+          "required": false
+        },
+        {
+          "key": "spotifyAccessToken",
+          "type": "string",
+          "size": 2000,
+          "required": false
+        },
+        {
+          "key": "spotifyRefreshToken",
+          "type": "string",
+          "size": 2000,
+          "required": false
+        },
+        {
+          "key": "topGenres",
+          "type": "string",
+          "size": 100,
+          "required": false,
+          "array": true
+        },
+        {
+          "key": "topArtists",
+          "type": "string",
+          "size": 255,
+          "required": false,
+          "array": true
+        }
+      ],
+      "indexes": [
+        { "key": "email_idx", "type": "key", "attributes": ["email"] },
+        {
+          "key": "spotifyUserId_idx",
+          "type": "key",
+          "attributes": ["spotifyUserId"]
+        }
+      ]
+    },
+    {
+      "collectionId": "swipes",
+      "name": "Swipes",
+      "permissions": [
+        "create(\"users\")",
+        "read(\"users\")",
+        "update(\"users\")",
+        "delete(\"users\")"
+      ],
+      "documentSecurity": true,
+      "attributes": [
+        { "key": "swiperId", "type": "string", "size": 255, "required": true },
+        { "key": "swipedId", "type": "string", "size": 255, "required": true },
+        {
+          "key": "direction",
+          "type": "enum",
+          "elements": ["left", "right", "superlike"],
+          "required": true
+        },
+        { "key": "createdAt", "type": "datetime", "required": false }
+      ],
+      "indexes": [
+        { "key": "swiperId_idx", "type": "key", "attributes": ["swiperId"] },
+        { "key": "swipedId_idx", "type": "key", "attributes": ["swipedId"] },
+        {
+          "key": "swiper_swiped_idx",
+          "type": "unique",
+          "attributes": ["swiperId", "swipedId"]
+        }
+      ]
+    },
+    {
+      "collectionId": "matches",
+      "name": "Matches",
+      "permissions": [
+        "create(\"users\")",
+        "read(\"users\")",
+        "update(\"users\")",
+        "delete(\"users\")"
+      ],
+      "documentSecurity": true,
+      "attributes": [
+        { "key": "user1Id", "type": "string", "size": 255, "required": true },
+        { "key": "user2Id", "type": "string", "size": 255, "required": true },
+        {
+          "key": "compatibilityScore",
+          "type": "integer",
+          "required": false,
+          "min": 0,
+          "max": 100
+        },
+        {
+          "key": "sharedGenres",
+          "type": "string",
+          "size": 100,
+          "required": false,
+          "array": true
+        },
+        {
+          "key": "sharedArtists",
+          "type": "string",
+          "size": 255,
+          "required": false,
+          "array": true
+        },
+        { "key": "createdAt", "type": "datetime", "required": true },
+        { "key": "lastMessageAt", "type": "datetime", "required": false }
+      ],
+      "indexes": [
+        { "key": "user1Id_idx", "type": "key", "attributes": ["user1Id"] },
+        { "key": "user2Id_idx", "type": "key", "attributes": ["user2Id"] },
+        {
+          "key": "users_idx",
+          "type": "unique",
+          "attributes": ["user1Id", "user2Id"]
+        }
+      ]
+    },
+    {
+      "collectionId": "messages",
+      "name": "Messages",
+      "permissions": [
+        "create(\"users\")",
+        "read(\"users\")",
+        "update(\"users\")",
+        "delete(\"users\")"
+      ],
+      "documentSecurity": true,
+      "attributes": [
+        { "key": "matchId", "type": "string", "size": 255, "required": true },
+        { "key": "senderId", "type": "string", "size": 255, "required": true },
+        {
+          "key": "receiverId",
+          "type": "string",
+          "size": 255,
+          "required": true
+        },
+        {
+          "key": "type",
+          "type": "enum",
+          "elements": ["text", "song", "playlist", "voice", "image"],
+          "required": true,
+          "default": "text"
+        },
+        { "key": "content", "type": "string", "size": 5000, "required": true },
+        {
+          "key": "songData",
+          "type": "string",
+          "size": 2000,
+          "required": false
+        },
+        {
+          "key": "read",
+          "type": "boolean",
+          "required": true,
+          "default": false
+        },
+        { "key": "createdAt", "type": "datetime", "required": true }
+      ],
+      "indexes": [
+        { "key": "matchId_idx", "type": "key", "attributes": ["matchId"] },
+        { "key": "senderId_idx", "type": "key", "attributes": ["senderId"] },
+        { "key": "createdAt_idx", "type": "key", "attributes": ["createdAt"] }
+      ]
+    }
+  ],
+  "buckets": [
+    {
+      "bucketId": "avatars",
+      "name": "User Avatars",
+      "permissions": [
+        "read(\"any\")",
+        "create(\"users\")",
+        "update(\"users\")",
+        "delete(\"users\")"
+      ],
+      "fileSecurity": true,
+      "maximumFileSize": 5242880,
+      "allowedFileExtensions": ["jpg", "jpeg", "png", "gif", "webp"]
+    }
+  ]
+}

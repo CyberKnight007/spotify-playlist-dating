@@ -4,7 +4,7 @@
     "module": "esnext",
     "strict": true,
     "jsx": "react-native",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -14,6 +14,7 @@
       "@/*": ["src/*"]
     }
   },
-  "include": ["src", "App.tsx"],
-  "exclude": ["node_modules", "babel.config.js", "metro.config.js"]
+  "include": ["src", "App.tsx", "nativewind-env.d.ts"],
+  "exclude": ["node_modules", "babel.config.js", "metro.config.js"],
+  "extends": "expo/tsconfig.base"
 }
