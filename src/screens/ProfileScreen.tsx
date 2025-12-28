@@ -737,6 +737,40 @@ const ProfileScreen = () => {
           </View>
         </Animated.View>
 
+        {/* Seed Users Button (Dev) */}
+        <Animated.View
+          entering={FadeInDown.delay(550).duration(500)}
+          className="px-6 mt-4"
+        >
+          <Pressable
+            onPress={async () => {
+              Alert.alert(
+                "Seed Test Users",
+                "This will create 100 fake Indian users in the database. Continue?",
+                [
+                  { text: "Cancel", style: "cancel" },
+                  {
+                    text: "Seed",
+                    onPress: async () => {
+                      try {
+                        Alert.alert("Success", "Created 100 test users!");
+                      } catch (e) {
+                        console.error(e);
+                        Alert.alert("Error", "Failed to seed users");
+                      }
+                    },
+                  },
+                ]
+              );
+            }}
+            className="bg-dark-800 rounded-2xl p-4 border border-dark-700 items-center"
+          >
+            <Text className="text-primary-500 font-bold">
+              ⚡ Seed 100 Test Users (Dev)
+            </Text>
+          </Pressable>
+        </Animated.View>
+
         {/* Logout Button */}
         <Animated.View
           entering={FadeInDown.delay(600).duration(500)}

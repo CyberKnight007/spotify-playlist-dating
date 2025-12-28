@@ -25,3 +25,6 @@ web-build/
 # OS
 Thumbs.db
 
+# Build outputs
+/*.apk
+*.aab

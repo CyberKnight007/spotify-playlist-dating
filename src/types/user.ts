@@ -21,6 +21,7 @@ export interface UserProfile {
   spotifyUserId?: string;
   topGenres?: string[];
   topArtists?: string[];
+  topTracks?: UserTrack[];
   location?: {
     latitude: number;
     longitude: number;
@@ -29,6 +30,14 @@ export interface UserProfile {
   isPremium?: boolean;
   pushEnabled?: boolean;
   darkModeEnabled?: boolean;
+}
+
+export interface UserTrack {
+  id: string;
+  name: string;
+  artist: string;
+  albumArt?: string;
+  previewUrl?: string | null;
 }
 
 // ============================================
@@ -53,6 +62,7 @@ export interface SwipeCard {
   compatibility?: number;
   sharedGenres?: string[];
   sharedArtists?: string[];
+  sharedTracks?: string[];
   topGenres?: string[];
   topArtists?: string[];
   audioProfile?: {

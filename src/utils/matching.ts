@@ -5,6 +5,7 @@ import { UserProfile } from "../types/user";
 // ============================================
 
 export interface CompatibilityFactors {
+  trackScore: number;
   genreScore: number;
   artistScore: number;
   ageScore: number;
@@ -15,6 +16,7 @@ export interface CompatibilityFactors {
 export interface CompatibilityResult {
   score: number;
   factors: CompatibilityFactors;
+  sharedTracks: string[];
   sharedGenres: string[];
   sharedArtists: string[];
   insights: string[];
@@ -28,6 +30,7 @@ export async function calculateCompatibility(
   user2: UserProfile
 ): Promise<CompatibilityResult> {
   const factors: CompatibilityFactors = {
+    trackScore: 0,
     genreScore: 0,
     artistScore: 0,
     ageScore: 0,
@@ -35,11 +38,29 @@ export async function calculateCompatibility(
     bioScore: 0,
   };
 
+  const sharedTracks: string[] = [];
   const sharedGenres: string[] = [];
   const sharedArtists: string[] = [];
   const insights: string[] = [];
 
-  // 1. Genre matching (40% weight)
+  // 1. Track matching (30% weight)
+  if (user1.topTracks && user2.topTracks) {
+    const tracks1 = new Set(user1.topTracks.map((t) => t.id));
+
+    for (const track of user2.topTracks) {
+      if (tracks1.has(track.id)) {
+        sharedTracks.push(track.name);
+      }
+    }
+
+    factors.trackScore = Math.min(sharedTracks.length * 20, 100);
+
+    if (sharedTracks.length > 0) {
+      insights.push(`🎧 You both vibe to ${sharedTracks[0]}!`);
+    }
+  }
+
+  // 2. Genre matching (25% weight)
   if (user1.topGenres && user2.topGenres) {
     const genres1 = new Set(user1.topGenres.map((g) => g.toLowerCase()));
     const genres2 = user2.topGenres.map((g) => g.toLowerCase());
@@ -57,7 +78,7 @@ export async function calculateCompatibility(
     }
   }
 
-  // 2. Artist matching (30% weight)
+  // 3. Artist matching (25% weight)
   if (user1.topArtists && user2.topArtists) {
     const artists1 = new Set(user1.topArtists.map((a) => a.toLowerCase()));
     const artists2 = user2.topArtists.map((a) => a.toLowerCase());
@@ -75,7 +96,7 @@ export async function calculateCompatibility(
     }
   }
 
-  // 3. Age compatibility (10% weight)
+  // 4. Age compatibility (10% weight)
   if (user1.age && user2.age) {
     const ageDiff = Math.abs(user1.age - user2.age);
     factors.ageScore = Math.max(0, 100 - ageDiff * 5);
@@ -85,7 +106,7 @@ export async function calculateCompatibility(
     }
   }
 
-  // 4. Location compatibility (10% weight)
+  // 5. Location compatibility (5% weight)
   if (user1.city && user2.city) {
     if (user1.city.toLowerCase() === user2.city.toLowerCase()) {
       factors.locationScore = 100;
@@ -95,7 +116,7 @@ export async function calculateCompatibility(
     }
   }
 
-  // 5. Bio keyword matching (10% weight)
+  // 6. Bio keyword matching (5% weight)
   if (user1.bio && user2.bio) {
     const commonKeywords = findCommonKeywords(user1.bio, user2.bio);
     factors.bioScore = Math.min(commonKeywords.length * 20, 100);
@@ -107,16 +128,18 @@ export async function calculateCompatibility(
 
   // Calculate weighted total
   const totalScore = Math.round(
-    factors.genreScore * 0.4 +
-      factors.artistScore * 0.3 +
+    factors.trackScore * 0.3 +
+      factors.genreScore * 0.25 +
+      factors.artistScore * 0.25 +
       factors.ageScore * 0.1 +
-      factors.locationScore * 0.1 +
-      factors.bioScore * 0.1
+      factors.locationScore * 0.05 +
+      factors.bioScore * 0.05
   );
 
   return {
     score: totalScore,
     factors,
+    sharedTracks,
     sharedGenres,
     sharedArtists,
     insights: insights.slice(0, 3),

@@ -328,6 +328,15 @@
           "min": 0,
           "max": 9999,
           "default": 0
+        },
+        {
+          "key": "topTracks",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 10000,
+          "default": null,
+          "encrypt": false
         }
       ],
       "indexes": [

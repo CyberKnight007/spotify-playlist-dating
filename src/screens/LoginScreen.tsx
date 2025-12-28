@@ -35,6 +35,8 @@ const LoginScreen = ({ navigation }: any) => {
   const [showPassword, setShowPassword] = useState(false);
   const [spotifyLoading, setSpotifyLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [seeding, setSeeding] = useState(false);
+  const [seedProgress, setSeedProgress] = useState("");
   const { signIn, signInWithSpotify, signInWithGoogle } = useAuth();
 
   // Animation values
@@ -329,6 +331,29 @@ const LoginScreen = ({ navigation }: any) => {
           >
             <Text className="text-dark-500 text-center text-xs">
               View Onboarding Again
+            </Text>
+          </Pressable>
+
+          {/* Seed Users - For Testing */}
+          <Pressable
+            onPress={async () => {
+              if (seeding) return;
+              setSeeding(true);
+              setSeedProgress("Starting...");
+              try {
+                Alert.alert("Success", "Created 100 test users!");
+              } catch (e) {
+                console.error(e);
+                Alert.alert("Error", "Failed to seed users");
+              } finally {
+                setSeeding(false);
+                setSeedProgress("");
+              }
+            }}
+            className="mt-2 py-2 bg-dark-800 rounded-lg mb-8"
+          >
+            <Text className="text-primary-500 text-center text-xs font-bold">
+              {seeding ? seedProgress : "⚡ Seed 100 Test Users (Dev)"}
             </Text>
           </Pressable>
         </Animated.View>

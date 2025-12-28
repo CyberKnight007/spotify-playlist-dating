@@ -122,6 +122,7 @@ export const userService = {
       "spotifyRefreshToken",
       "topGenres",
       "topArtists",
+      "topTracks",
       "isOnline",
       "lastSeen",
       "isTyping",
@@ -149,12 +150,33 @@ export const userService = {
       }
     }
 
-    await databases.updateDocument(
-      DATABASE_ID,
-      COLLECTIONS.USERS,
-      userId,
-      updateData
-    );
+    try {
+      await databases.updateDocument(
+        DATABASE_ID,
+        COLLECTIONS.USERS,
+        userId,
+        updateData
+      );
+    } catch (error: any) {
+      // Handle missing attribute error gracefully
+      if (
+        error.message &&
+        error.message.includes('Unknown attribute: "topTracks"')
+      ) {
+        console.warn(
+          "⚠️ 'topTracks' attribute missing in Appwrite. Retrying without it."
+        );
+        delete updateData.topTracks;
+        await databases.updateDocument(
+          DATABASE_ID,
+          COLLECTIONS.USERS,
+          userId,
+          updateData
+        );
+      } else {
+        throw error;
+      }
+    }
   },
 
   // ==================== SAFETY & MODERATION ====================
@@ -466,6 +488,13 @@ export const userService = {
                 )
               ) || [];
 
+            const sharedTracks =
+              currentUser.topTracks
+                ?.filter((t) =>
+                  potentialMatch.topTracks?.some((t2) => t.id === t2.id)
+                )
+                .map((t) => t.name) || [];
+
             return {
               userId: doc.$id,
               displayName: potentialMatch.displayName,
@@ -477,6 +506,7 @@ export const userService = {
               compatibility: compatibilityScore,
               sharedGenres,
               sharedArtists,
+              sharedTracks,
               topGenres: potentialMatch.topGenres || [],
               topArtists: potentialMatch.topArtists || [],
             };

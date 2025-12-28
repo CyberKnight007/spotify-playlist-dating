@@ -306,6 +306,13 @@ export const SpotifyProvider: React.FC<React.PropsWithChildren> = ({
             topArtists: data.topArtists.mediumTerm
               .slice(0, 5)
               .map((a: SpotifyArtist) => a.name),
+            topTracks: data.topTracks.mediumTerm.slice(0, 10).map((t) => ({
+              id: t.id,
+              name: t.name,
+              artist: t.artists[0].name,
+              albumArt: t.album.images[0]?.url,
+              previewUrl: t.preview_url,
+            })),
             avatar: data.profile.images?.[0]?.url,
           });
         }
