@@ -1,7 +1,8 @@
 {
   "expo": {
-    "name": "Playlist Match",
+    "name": "BeatBond",
     "slug": "spotify-playlist-dating",
+    "icon": "./assets/adaptive-icon.png",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
@@ -9,33 +10,29 @@
       "resizeMode": "contain",
       "backgroundColor": "#0e1117"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.beatbond.app",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
-    "scheme": "playlistmatch",
+    "scheme": "appwrite-callback-692c0bae0033b9e34774",
     "android": {
-      "package": "com.playlistmatch.app",
+      "package": "com.beatbond.app",
       "versionCode": 1,
-      "permissions": [
-        "INTERNET",
-        "ACCESS_NETWORK_STATE"
-      ],
+      "permissions": ["INTERNET", "ACCESS_NETWORK_STATE"],
       "intentFilters": [
         {
           "action": "VIEW",
           "autoVerify": true,
           "data": [
             {
-              "scheme": "playlistmatch"
+              "scheme": "appwrite-callback-692c0bae0033b9e34774"
             }
           ],
-          "category": [
-            "BROWSABLE",
-            "DEFAULT"
-          ]
+          "category": ["BROWSABLE", "DEFAULT"]
         }
       ]
     },
@@ -44,8 +41,10 @@
     },
     "extra": {
       "eas": {
-        "projectId": "c701599f-4d4b-4f0a-80db-65cac5d95532"
+        "projectId": "c9ad6d69-e5c0-4ab8-a1bc-15ec50ba3b30"
       }
-    }
+    },
+    "plugins": ["expo-font"],
+    "owner": "prashant178"
   }
 }

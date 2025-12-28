@@ -1,0 +1,695 @@
+{
+  "projectId": "692c0bae0033b9e34774",
+  "endpoint": "https://sgp.cloud.appwrite.io/v1",
+  "projectName": "GladiatorrX",
+  "settings": {
+    "services": {
+      "account": true,
+      "avatars": true,
+      "databases": true,
+      "locale": true,
+      "health": true,
+      "storage": true,
+      "teams": true,
+      "users": true,
+      "sites": true,
+      "functions": true,
+      "graphql": true,
+      "messaging": true
+    },
+    "auth": {
+      "methods": {
+        "jwt": true,
+        "phone": true,
+        "invites": true,
+        "anonymous": true,
+        "email-otp": true,
+        "magic-url": true,
+        "email-password": true
+      },
+      "security": {
+        "duration": 31536000,
+        "limit": 0,
+        "sessionsLimit": 10,
+        "passwordHistory": 0,
+        "passwordDictionary": false,
+        "personalDataCheck": false,
+        "sessionAlerts": false,
+        "mockNumbers": []
+      }
+    }
+  },
+  "buckets": [
+    {
+      "$id": "avatars",
+      "$permissions": [
+        "read(\"any\")",
+        "create(\"users\")",
+        "read(\"users\")",
+        "update(\"users\")",
+        "delete(\"users\")"
+      ],
+      "fileSecurity": false,
+      "name": "User Avatars",
+      "enabled": true,
+      "maximumFileSize": 5000000000,
+      "allowedFileExtensions": [],
+      "compression": "none",
+      "encryption": true,
+      "antivirus": true
+    }
+  ],
+  "tablesDB": [
+    {
+      "$id": "6933e7230002691f918d",
+      "name": "beatbond",
+      "enabled": true
+    }
+  ],
+  "tables": [
+    {
+      "$id": "users",
+      "$permissions": [
+        "read(\"users\")",
+        "create(\"users\")",
+        "update(\"users\")",
+        "delete(\"users\")"
+      ],
+      "databaseId": "6933e7230002691f918d",
+      "name": "users",
+      "enabled": true,
+      "rowSecurity": true,
+      "columns": [
+        {
+          "key": "age",
+          "type": "integer",
+          "required": false,
+          "array": false,
+          "min": 18,
+          "max": 120,
+          "default": null
+        },
+        {
+          "key": "createdAt",
+          "type": "datetime",
+          "required": false,
+          "array": false,
+          "format": "",
+          "default": null
+        },
+        {
+          "key": "updatedAt",
+          "type": "datetime",
+          "required": false,
+          "array": false,
+          "format": "",
+          "default": null
+        },
+        {
+          "key": "lastActive",
+          "type": "datetime",
+          "required": false,
+          "array": false,
+          "format": "",
+          "default": null
+        },
+        {
+          "key": "email",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "displayName",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "bio",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 1000,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "pronouns",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 50,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "city",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "avatar",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 2048,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "spotifyUserId",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "spotifyAccessToken",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 2000,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "spotifyRefreshToken",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 2000,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "topGenres",
+          "type": "string",
+          "required": false,
+          "array": true,
+          "size": 100,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "topArtists",
+          "type": "string",
+          "required": false,
+          "array": true,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "isOnline",
+          "type": "boolean",
+          "required": false,
+          "array": false,
+          "default": false
+        },
+        {
+          "key": "lastSeen",
+          "type": "datetime",
+          "required": false,
+          "array": false,
+          "format": "",
+          "default": null
+        },
+        {
+          "key": "isTyping",
+          "type": "boolean",
+          "required": false,
+          "array": false,
+          "default": false
+        },
+        {
+          "key": "lastTyping",
+          "type": "datetime",
+          "required": false,
+          "array": false,
+          "format": "",
+          "default": null
+        },
+        {
+          "key": "latitude",
+          "type": "double",
+          "required": false,
+          "array": false,
+          "default": null
+        },
+        {
+          "key": "longitude",
+          "type": "double",
+          "required": false,
+          "array": false,
+          "default": null
+        },
+        {
+          "key": "photoUrl",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 2048,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "profileComplete",
+          "type": "boolean",
+          "required": false,
+          "array": false,
+          "default": false
+        },
+        {
+          "key": "isPremium",
+          "type": "boolean",
+          "required": false,
+          "array": false,
+          "default": false
+        },
+        {
+          "key": "darkModeEnabled",
+          "type": "boolean",
+          "required": false,
+          "array": false,
+          "default": false
+        },
+        {
+          "key": "blockedUsers",
+          "type": "string",
+          "required": false,
+          "array": true,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "pushToken",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "pushEnabled",
+          "type": "boolean",
+          "required": false,
+          "array": false,
+          "default": true
+        },
+        {
+          "key": "unreadCount",
+          "type": "integer",
+          "required": false,
+          "array": false,
+          "min": 0,
+          "max": 9999,
+          "default": 0
+        },
+        {
+          "key": "matchCount",
+          "type": "integer",
+          "required": false,
+          "array": false,
+          "min": 0,
+          "max": 9999,
+          "default": 0
+        },
+        {
+          "key": "topTracks",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 10000,
+          "default": null,
+          "encrypt": false
+        }
+      ],
+      "indexes": [
+        {
+          "key": "email_idx",
+          "type": "key",
+          "status": "failed",
+          "columns": ["email"],
+          "orders": ["ASC"]
+        }
+      ]
+    },
+    {
+      "$id": "swipes",
+      "$permissions": [
+        "read(\"users\")",
+        "create(\"users\")",
+        "update(\"users\")",
+        "delete(\"users\")"
+      ],
+      "databaseId": "6933e7230002691f918d",
+      "name": "swipes",
+      "enabled": true,
+      "rowSecurity": true,
+      "columns": [
+        {
+          "key": "swiperId",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "swipedId",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "direction",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 20,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "createdAt",
+          "type": "datetime",
+          "required": false,
+          "array": false,
+          "format": "",
+          "default": null
+        }
+      ],
+      "indexes": [
+        {
+          "key": "swiperId_idx",
+          "type": "key",
+          "status": "available",
+          "columns": ["swiperId"],
+          "orders": ["ASC"]
+        },
+        {
+          "key": "swipedId_idx",
+          "type": "key",
+          "status": "available",
+          "columns": ["swipedId"],
+          "orders": ["ASC"]
+        }
+      ]
+    },
+    {
+      "$id": "matches",
+      "$permissions": [
+        "read(\"users\")",
+        "create(\"users\")",
+        "update(\"users\")",
+        "delete(\"users\")"
+      ],
+      "databaseId": "6933e7230002691f918d",
+      "name": "matches",
+      "enabled": true,
+      "rowSecurity": true,
+      "columns": [
+        {
+          "key": "user1Id",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "user2Id",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "compatibilityScore",
+          "type": "integer",
+          "required": false,
+          "array": false,
+          "min": 0,
+          "max": 100,
+          "default": null
+        },
+        {
+          "key": "sharedGenres",
+          "type": "string",
+          "required": false,
+          "array": true,
+          "size": 100,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "sharedArtists",
+          "type": "string",
+          "required": false,
+          "array": true,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "createdAt",
+          "type": "datetime",
+          "required": true,
+          "array": false,
+          "format": "",
+          "default": null
+        },
+        {
+          "key": "lastMessageAt",
+          "type": "datetime",
+          "required": false,
+          "array": false,
+          "format": "",
+          "default": null
+        }
+      ],
+      "indexes": [
+        {
+          "key": "user1Id_idx",
+          "type": "key",
+          "status": "available",
+          "columns": ["user1Id"],
+          "orders": ["ASC"]
+        },
+        {
+          "key": "user2Id_idx",
+          "type": "key",
+          "status": "available",
+          "columns": ["user2Id"],
+          "orders": ["ASC"]
+        }
+      ]
+    },
+    {
+      "$id": "messages",
+      "$permissions": [
+        "read(\"users\")",
+        "create(\"users\")",
+        "update(\"users\")",
+        "delete(\"users\")"
+      ],
+      "databaseId": "6933e7230002691f918d",
+      "name": "messages",
+      "enabled": true,
+      "rowSecurity": true,
+      "columns": [
+        {
+          "key": "matchId",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "senderId",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "receiverId",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "type",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 20,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "content",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 5000,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "songData",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 2000,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "read",
+          "type": "boolean",
+          "required": false,
+          "array": false,
+          "default": false
+        },
+        {
+          "key": "createdAt",
+          "type": "datetime",
+          "required": false,
+          "array": false,
+          "format": "",
+          "default": null
+        },
+        {
+          "key": "status",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 20,
+          "default": "sent",
+          "encrypt": false
+        },
+        {
+          "key": "deliveredAt",
+          "type": "datetime",
+          "required": false,
+          "array": false,
+          "format": "",
+          "default": null
+        },
+        {
+          "key": "readAt",
+          "type": "datetime",
+          "required": false,
+          "array": false,
+          "format": "",
+          "default": null
+        },
+        {
+          "key": "readBy",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        }
+      ],
+      "indexes": [
+        {
+          "key": "matchId_idx",
+          "type": "key",
+          "status": "available",
+          "columns": ["matchId"],
+          "orders": ["ASC"]
+        },
+        {
+          "key": "createdAt_idx",
+          "type": "key",
+          "status": "available",
+          "columns": ["createdAt"],
+          "orders": ["ASC"]
+        }
+      ]
+    }
+  ],
+  "functions": [
+    {
+      "$id": "6933f74b003925258486",
+      "name": "match-notification",
+      "runtime": "node-22",
+      "specification": "s-1vcpu-512mb",
+      "execute": ["any"],
+      "events": [],
+      "scopes": ["users.read"],
+      "schedule": "",
+      "timeout": 15,
+      "enabled": true,
+      "logging": true,
+      "entrypoint": "src/main.js",
+      "commands": "npm install",
+      "path": "functions/match-notification"
+    },
+    {
+      "$id": "6933f859000ebffff33a",
+      "name": "message-delivery-status",
+      "runtime": "node-22",
+      "specification": "s-1vcpu-512mb",
+      "execute": ["any"],
+      "events": [],
+      "scopes": ["users.read"],
+      "schedule": "",
+      "timeout": 15,
+      "enabled": true,
+      "logging": true,
+      "entrypoint": "src/main.js",
+      "commands": "npm install",
+      "path": "functions/message-delivery-status"
+    },
+    {
+      "$id": "6933f87c00016a7eae93",
+      "name": "send-push-notification",
+      "runtime": "node-22",
+      "specification": "s-1vcpu-512mb",
+      "execute": ["any"],
+      "events": [],
+      "scopes": ["users.read"],
+      "schedule": "",
+      "timeout": 15,
+      "enabled": true,
+      "logging": true,
+      "entrypoint": "src/main.js",
+      "commands": "npm install",
+      "path": "functions/send-push-notification"
+    }
+  ]
+}

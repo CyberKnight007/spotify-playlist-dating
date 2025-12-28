@@ -1,31 +1,23 @@
-// API Configuration
-// Replace these with your actual API keys
-
-export const FIREBASE_CONFIG = {
-  apiKey: 'AIzaSyAI-L21yHrPAXEU9WFoT_UVQqmAUlClYYs',
-  authDomain: 'spotify-dating.firebaseapp.com',
-  databaseURL: 'https://spotify-dating-default-rtdb.asia-southeast1.firebasedatabase.app',
-  projectId: 'spotify-dating',
-  storageBucket: 'spotify-dating.firebasestorage.app',
-  messagingSenderId: '541780850066',
-  appId: '1:541780850066:web:7dbd96f4de403d4cbdbd4b',
-  measurementId: 'G-RXWPMQFK1L'
+// Appwrite Configuration - Hardcoded for reliability
+export const APPWRITE_CONFIG = {
+  endpoint: "https://sgp.cloud.appwrite.io/v1",
+  projectId: "692c0bae0033b9e34774",
+  databaseId: "6933e7230002691f918d", // beatbond database (created via CLI)
+  storageBucketId: "avatars", // For user profile images
 };
 
+// Spotify Configuration
 export const SPOTIFY_CONFIG = {
-  clientId: '1229e889987745908ae1cd0a35681e3c',
-  clientSecret: 'e69d051d784a41b5ae8ce91b41c11d04'
+  clientId: process.env.EXPO_PUBLIC_SPOTIFY_CLIENT_ID || "",
+  clientSecret: process.env.EXPO_PUBLIC_SPOTIFY_CLIENT_SECRET || "",
+  redirectUri:
+    process.env.EXPO_PUBLIC_SPOTIFY_REDIRECT_URI || "playlistmatch://callback",
 };
 
-// Instructions:
-// 1. Firebase: Go to https://console.firebase.google.com
-//    - Create a new project
-//    - Enable Authentication (Email/Password)
-//    - Enable Firestore Database
-//    - Copy config from Project Settings > General > Your apps
-//
-// 2. Spotify: Go to https://developer.spotify.com/dashboard
-//    - Create a new app
-//    - Copy Client ID
-//    - Add redirect URI: playlistmatch://
-
+// Collection IDs - Hardcoded for reliability
+export const COLLECTIONS = {
+  users: "users",
+  swipes: "swipes",
+  matches: "matches",
+  messages: "messages",
+};
